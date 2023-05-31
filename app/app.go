@@ -1,0 +1,1 @@
+// create a folder app that has a struct App which containes a IRepo interface and has some functions like list, add etc
