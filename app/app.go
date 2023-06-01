@@ -1,14 +1,17 @@
-// create a folder app that has a struct App which containes a IRepo interface and has some functions like list, add etc
-
 package app
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
 
-type App struct{
+	"github.com/Coding-Brownies/todo/entity"
+)
+
+type App struct {
 	repo Repo
 }
 
-// funzione new restituisce un riferimento a
+// funzione new restituisce un riferimento ad App
 func New(r Repo) *App {
 	return &App{
 		repo: r,
@@ -16,10 +19,40 @@ func New(r Repo) *App {
 }
 
 // metodo run
-func (a *App) Run(cmd string) {
-	if cmd == "ls"{
+func (a *App) Run(cmd string, args ...string) error {
+	if cmd == "ls" {
 		tasks := a.repo.List()
 		fmt.Println(tasks)
-		return
+		return nil
 	}
+	if cmd == "add" {
+		var t entity.Task
+		err := a.repo.Add(
+			&t,
+		)
+		return err
+	}
+
+	if cmd == "delete" {
+		if len(args) != 1 {
+			return errors.New("delete accept only one argument")
+		}
+		return a.repo.Delete(args[0])
+	}
+
+	if cmd == "check" {
+		if len(args) != 1 {
+			return errors.New("check accept only one argument")
+		}
+		return a.repo.Check(args[0])
+	}
+
+	if cmd == "uncheck" {
+		if len(args) != 1 {
+			return errors.New("uncheck accept only one argument")
+		}
+		return a.repo.Uncheck(args[0])
+	}
+
+	return nil
 }

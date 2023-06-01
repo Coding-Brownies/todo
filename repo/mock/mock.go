@@ -12,6 +12,15 @@ type MockRepo struct{}
 func New() *MockRepo {
 	return &MockRepo{}
 }
+
+func (m *MockRepo) Add(e *entity.Task) error {
+	return nil
+}
+
+func (m *MockRepo) Delete(id string) error {
+	return nil
+}
+
 func (m *MockRepo) List() []entity.Task {
 	return []entity.Task{
 		{
@@ -20,8 +29,10 @@ func (m *MockRepo) List() []entity.Task {
 	}
 }
 
-func (m *MockRepo) Add(e *entity.Task) error {
+func (m *MockRepo) Check(id string) error {
 	return nil
 }
 
-//remove
+func (m *MockRepo) Uncheck(id string) error {
+	return nil
+}
