@@ -139,3 +139,24 @@ func (j *JSONRepo) Uncheck(id string) error {
 	err = j.store(tasks)
 	return err
 }
+
+func (j *JSONRepo) Edit(id string, newDescription string) error {
+	index, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		return err
+	}
+	tasks, err := j.List()
+	if err != nil {
+		return err
+	}
+	if index < 0 || int(index) >= len(tasks) {
+		return errors.New("wrong id")
+	}
+	
+	tasks[index].Description=newDescription
+
+	err = j.store(tasks)
+	return err
+}
+
+// fare funzione locale che controlla l'id in input

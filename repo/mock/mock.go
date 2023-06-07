@@ -36,3 +36,7 @@ func (m *MockRepo) Check(id string) error {
 func (m *MockRepo) Uncheck(id string) error {
 	return nil
 }
+
+func (m *MockRepo) Edit(id string, newDescription string) error {
+	return nil
+}

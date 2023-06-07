@@ -69,5 +69,12 @@ func (a *App) Run(cmd string, args ...string) error {
 		return a.repo.Uncheck(args[0])
 	}
 
+	if cmd == "edit" {
+		if len(args) != 2 {
+			return errors.New("edit accept 2 arguments")
+		}
+		return a.repo.Edit(args[0], args[1])
+	}
+
 	return errors.New("command not found")
 }
