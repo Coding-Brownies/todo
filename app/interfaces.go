@@ -8,4 +8,6 @@ type Repo interface {
 	Delete(ID string) error
 	Check(ID string) error
 	Uncheck(ID string) error
+	Edit(ID string, newDescription string) error
+	// Live
 }

@@ -26,14 +26,11 @@ func New(p string) *JSONRepo {
 }
 
 func (j *JSONRepo) List() ([]entity.Task, error) {
-	// creare il file json se non esiste già
-
 	// check if file exists
 	_, err := os.Stat(j.path)
 	// if file does not exist, create file
 	if err != nil {
 		_, err := os.Create(j.path)
-
 		if err != nil {
 			return nil, err
 		}
@@ -48,6 +45,7 @@ func (j *JSONRepo) List() ([]entity.Task, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	var res []entity.Task
 
 	if string(content) != "" {
@@ -59,6 +57,7 @@ func (j *JSONRepo) List() ([]entity.Task, error) {
 	for i := 0; i < len(res); i++ {
 		res[i].ID = fmt.Sprint(i)
 	}
+
 	return res, nil
 }
 
@@ -67,12 +66,13 @@ func (j *JSONRepo) Add(t *entity.Task) error {
 	if err != nil {
 		return err
 	}
+
 	tasks = append(tasks, *t)
+
 	err = j.store(tasks)
 	return err
 }
 
-// funzione in locale
 func (j *JSONRepo) store(tasks []entity.Task) error {
 	// conversione di tasks in JSON
 	content, err := json.Marshal(tasks)
@@ -87,55 +87,73 @@ func (j *JSONRepo) store(tasks []entity.Task) error {
 	return err
 }
 
-func (j *JSONRepo) Delete(id string) error {
-	index, err := strconv.ParseInt(id, 10, 64)
+// funzione locale cucita secondo il contesto e le necessità delle funzioni Delete, Check, Uncheck e Edit
+// controlla che un id fornito esista e che la funzione List vada a buon fine, dopodichè restituise index, tasks e un errore
+func (j *JSONRepo) idAndListCheck(id string) (int, []entity.Task, error) {
+	i, err := strconv.ParseInt(id, 10, 64)
+	index := int(i)
 	if err != nil {
-		return err
+		return -1, nil, err
 	}
+
 	tasks, err := j.List()
 	if err != nil {
+		return -1, nil, err
+	}
+
+	if index < 0 || int(index) >= len(tasks) {
+		return -1, nil, errors.New("wrong id")
+	}
+
+	return index, tasks, err
+}
+
+func (j *JSONRepo) Delete(id string) error {
+	index, tasks, err := j.idAndListCheck(id)
+	if err != nil {
 		return err
 	}
-	if index < 0 || int(index) >= len(tasks) {
-		return errors.New("wrong id")
-	}
+
 	tasks = append(tasks[:index], tasks[index+1:]...)
+
 	err = j.store(tasks)
 	return err
 }
 
 func (j *JSONRepo) Check(id string) error {
-	index, err := strconv.ParseInt(id, 10, 64)
+	index, tasks, err := j.idAndListCheck(id)
 	if err != nil {
 		return err
-	}
-	tasks, err := j.List()
-	if err != nil {
-		return err
-	}
-	if index < 0 || int(index) >= len(tasks) {
-		return errors.New("wrong id")
 	}
 
 	tasks[index].Done = true
+
 	err = j.store(tasks)
 	return err
 }
 
 func (j *JSONRepo) Uncheck(id string) error {
-	index, err := strconv.ParseInt(id, 10, 64)
+	index, tasks, err := j.idAndListCheck(id)
 	if err != nil {
 		return err
-	}
-	tasks, err := j.List()
-	if err != nil {
-		return err
-	}
-	if index < 0 || int(index) >= len(tasks) {
-		return errors.New("wrong id")
 	}
 
 	tasks[index].Done = false
+
 	err = j.store(tasks)
 	return err
 }
+
+func (j *JSONRepo) Edit(id string, newDescription string) error {
+	index, tasks, err := j.idAndListCheck(id)
+	if err != nil {
+		return err
+	}
+
+	tasks[index].Description = newDescription
+
+	err = j.store(tasks)
+	return err
+}
+
+// func Live
