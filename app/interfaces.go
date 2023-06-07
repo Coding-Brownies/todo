@@ -3,7 +3,7 @@ package app
 import "github.com/Coding-Brownies/todo/entity"
 
 type Repo interface {
-	List() []entity.Task
+	List() ([]entity.Task, error)
 	Add(t *entity.Task) error
 	Delete(ID string) error
 	Check(ID string) error

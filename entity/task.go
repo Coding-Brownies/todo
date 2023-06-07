@@ -2,7 +2,7 @@
 package entity
 
 type Task struct{
-	ID string
+	ID string `json:"-"`
 	Done bool
 	Description string
 }
