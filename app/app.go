@@ -76,5 +76,7 @@ func (a *App) Run(cmd string, args ...string) error {
 		return a.repo.Edit(args[0], args[1])
 	}
 
+	// if cmd == "live"
+
 	return errors.New("command not found")
 }

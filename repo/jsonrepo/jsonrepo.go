@@ -87,8 +87,11 @@ func (j *JSONRepo) store(tasks []entity.Task) error {
 	return err
 }
 
-func (j *JSONRepo) existId(id string) (int64, []entity.Task, error) {
-	index, err := strconv.ParseInt(id, 10, 64)
+// funzione locale cucita secondo il contesto e le necessità delle funzioni Delete, Check, Uncheck e Edit
+// controlla che un id fornito esista e che la funzione List vada a buon fine, dopodichè restituise index, tasks e un errore
+func (j *JSONRepo) idAndListCheck(id string) (int, []entity.Task, error) {
+	i, err := strconv.ParseInt(id, 10, 64)
+	index := int(i)
 	if err != nil {
 		return -1, nil, err
 	}
@@ -106,7 +109,7 @@ func (j *JSONRepo) existId(id string) (int64, []entity.Task, error) {
 }
 
 func (j *JSONRepo) Delete(id string) error {
-	index, tasks, err := j.existId(id)
+	index, tasks, err := j.idAndListCheck(id)
 	if err != nil {
 		return err
 	}
@@ -118,7 +121,7 @@ func (j *JSONRepo) Delete(id string) error {
 }
 
 func (j *JSONRepo) Check(id string) error {
-	index, tasks, err := j.existId(id)
+	index, tasks, err := j.idAndListCheck(id)
 	if err != nil {
 		return err
 	}
@@ -130,7 +133,7 @@ func (j *JSONRepo) Check(id string) error {
 }
 
 func (j *JSONRepo) Uncheck(id string) error {
-	index, tasks, err := j.existId(id)
+	index, tasks, err := j.idAndListCheck(id)
 	if err != nil {
 		return err
 	}
@@ -142,7 +145,7 @@ func (j *JSONRepo) Uncheck(id string) error {
 }
 
 func (j *JSONRepo) Edit(id string, newDescription string) error {
-	index, tasks, err := j.existId(id)
+	index, tasks, err := j.idAndListCheck(id)
 	if err != nil {
 		return err
 	}
@@ -152,3 +155,5 @@ func (j *JSONRepo) Edit(id string, newDescription string) error {
 	err = j.store(tasks)
 	return err
 }
+
+// func Live
