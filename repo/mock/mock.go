@@ -13,20 +13,20 @@ func New() *MockRepo {
 	return &MockRepo{}
 }
 
-func (m *MockRepo) Add(e *entity.Task) error {
+func (m *MockRepo) List() ([]entity.Task, error) {
+	return []entity.Task{
+		{
+			Description: "marameo",
+		},
+	}, nil
+}
+
+func (m *MockRepo) Add(t *entity.Task) error {
 	return nil
 }
 
 func (m *MockRepo) Delete(id string) error {
 	return nil
-}
-
-func (m *MockRepo) List() []entity.Task {
-	return []entity.Task{
-		{
-			Description: "marameo",
-		},
-	}
 }
 
 func (m *MockRepo) Check(id string) error {
