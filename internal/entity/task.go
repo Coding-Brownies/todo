@@ -8,3 +8,5 @@ type Task struct {
 	Done        bool
 	Description string
 }
+
+func (t Task) FilterValue() string { return "" }

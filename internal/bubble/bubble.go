@@ -42,7 +42,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.editing {
 				break
 			}
-			if i, ok := m.list.SelectedItem().(Task); ok {
+			if i, ok := m.list.SelectedItem().(entity.Task); ok {
 				i.Done = !i.Done
 				m.list.SetItem(m.list.Index(), i)
 			}
@@ -51,12 +51,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.editing {
 				break
 			}
-			cur, ok := m.list.SelectedItem().(Task)
+			cur, ok := m.list.SelectedItem().(entity.Task)
 			if !ok {
 				return m, m.Init()
 			}
 			m.list.Select(m.list.Index() - 1)
-			above, ok := m.list.SelectedItem().(Task)
+			above, ok := m.list.SelectedItem().(entity.Task)
 			if !ok {
 				m.list.Select(m.list.Index() + 1)
 				return m, m.Init()
@@ -71,12 +71,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.editing {
 				break
 			}
-			cur, ok := m.list.SelectedItem().(Task)
+			cur, ok := m.list.SelectedItem().(entity.Task)
 			if !ok {
 				return m, m.Init()
 			}
 			m.list.Select(m.list.Index() + 1)
-			below, ok := m.list.SelectedItem().(Task)
+			below, ok := m.list.SelectedItem().(entity.Task)
 			if !ok {
 				m.list.Select(m.list.Index() - 1)
 				return m, m.Init()
@@ -89,7 +89,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				break
 			}
 
-			m.list.InsertItem(m.list.Index(), Task{})
+			m.list.InsertItem(m.list.Index(), entity.Task{})
 			m.list.Select(m.list.Index())
 			return m, m.Init()
 		case "delete", "backspace":
@@ -102,29 +102,31 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				m.list.RemoveItem(m.list.Index())
 			}
-
 			return m, m.Init()
 		case "shift+right":
 			if m.editing {
 				break
 			}
 			m.editing = true
-			cur, ok := m.list.SelectedItem().(Task)
+			cur, ok := m.list.SelectedItem().(entity.Task)
 			if !ok {
 				return m, m.Init()
 			}
-			m.textInput.SetValue(cur.Text)
+			m.textInput.SetValue(cur.Description)
 			return m, m.Init()
 		case "shift+left":
 			if !m.editing {
 				break
 			}
-			cur, ok := m.list.SelectedItem().(Task)
+			cur, ok := m.list.SelectedItem().(entity.Task)
 			if !ok {
 				return m, m.Init()
 			}
 
-			m.list.SetItem(m.list.Index(), Task{cur.Done, m.textInput.Value()})
+			m.list.SetItem(m.list.Index(), entity.Task{
+				Done:        cur.Done,
+				Description: m.textInput.Value(),
+			})
 			m.editing = false
 			return m, m.Init()
 		case "esc":
@@ -159,20 +161,13 @@ func (m model) View() string {
 	return m.list.View()
 }
 
-type Task struct {
-	Done bool
-	Text string
-}
-
-func (t Task) FilterValue() string { return "" }
-
 type taskDelegate struct{}
 
 func (d taskDelegate) Height() int                               { return 1 }
 func (d taskDelegate) Spacing() int                              { return 0 }
 func (d taskDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd { return nil }
 func (d taskDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
-	i, ok := listItem.(Task)
+	i, ok := listItem.(entity.Task)
 	if !ok {
 		return
 	}
@@ -181,7 +176,7 @@ func (d taskDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 	if i.Done {
 		state = entity.CheckDone
 	}
-	str := fmt.Sprintf("%s %s", state, i.Text)
+	str := fmt.Sprintf("%s %s", state, i.Description)
 
 	// remove multiple lines
 	if idx := strings.Index(str, "\n"); idx != -1 {
@@ -203,13 +198,11 @@ var (
 	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2)
 )
 
-func Run() {
-	var items []list.Item
+func Run(tasks []entity.Task) []entity.Task {
 
-	items = []list.Item{
-		Task{Done: false, Text: "salame"},
-		Task{Done: false, Text: "kek"},
-		Task{Done: false, Text: "diocane"},
+	items := make([]list.Item, len(tasks))
+	for i, v := range tasks {
+		items[i] = v
 	}
 
 	// build the input
@@ -243,4 +236,10 @@ func Run() {
 		fmt.Println("Error running program:", err)
 		os.Exit(1)
 	}
+
+	var res []entity.Task
+	for _, item := range m.list.Items() {
+		res = append(res, item.(entity.Task))
+	}
+	return res
 }

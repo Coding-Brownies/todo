@@ -41,4 +41,6 @@ func (m *MockRepo) Edit(id string, newDescription string) error {
 	return nil
 }
 
-// func Live
+func (m *MockRepo) Store([]entity.Task) error {
+	return nil
+}

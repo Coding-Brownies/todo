@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/Coding-Brownies/todo/internal/bubble"
 	"github.com/Coding-Brownies/todo/internal/entity"
 )
 
@@ -21,6 +22,9 @@ func New(r Repo) *App {
 // metodo run
 func (a *App) Run(cmd string, args ...string) error {
 	if cmd == "ls" {
+		if len(args) != 0 {
+			return errors.New("list accept no argument")
+		}
 		tasks, err := a.repo.List()
 		if err != nil {
 			return err
@@ -37,6 +41,9 @@ func (a *App) Run(cmd string, args ...string) error {
 		return nil
 	}
 	if cmd == "add" {
+		if len(args) != 1 {
+			return errors.New("add accept only one argument")
+		}
 		t := entity.Task{
 			Description: args[0],
 			Done:        false,
@@ -76,7 +83,17 @@ func (a *App) Run(cmd string, args ...string) error {
 	}
 
 	if cmd == "live" {
+		if len(args) != 0 {
+			return errors.New("live accept no argument")
+		}
+		tasks, err := a.repo.List()
+		if err != nil {
+			return err
+		}
 
+		res := bubble.Run(tasks)
+
+		return a.repo.Store(res)
 	}
 
 	return errors.New("command not found")
