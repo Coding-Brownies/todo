@@ -1,6 +1,6 @@
 package app
 
-import "github.com/Coding-Brownies/todo/entity"
+import "github.com/Coding-Brownies/todo/internal/entity"
 
 type Repo interface {
 	List() ([]entity.Task, error)

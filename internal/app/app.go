@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Coding-Brownies/todo/entity"
+	"github.com/Coding-Brownies/todo/internal/entity"
 )
 
 type App struct {

@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Coding-Brownies/todo/entity"
+	"github.com/Coding-Brownies/todo/internal/entity"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
