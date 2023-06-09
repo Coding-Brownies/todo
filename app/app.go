@@ -25,13 +25,13 @@ func (a *App) Run(cmd string, args ...string) error {
 		if err != nil {
 			return err
 		}
-		for _, t := range tasks {
+		for i, t := range tasks {
 			if t.Done {
-				fmt.Print("[x] ")
+				fmt.Print(entity.CheckDone)
 			} else {
-				fmt.Print("[ ] ")
+				fmt.Print(entity.CheckToDo)
 			}
-			fmt.Println(t.ID, t.Description)
+			fmt.Println(" ", i, t.Description)
 		}
 
 		return nil
@@ -40,7 +40,6 @@ func (a *App) Run(cmd string, args ...string) error {
 		t := entity.Task{
 			Description: args[0],
 			Done:        false,
-			ID:          "001",
 		}
 		err := a.repo.Add(
 			&t,
@@ -76,7 +75,9 @@ func (a *App) Run(cmd string, args ...string) error {
 		return a.repo.Edit(args[0], args[1])
 	}
 
-	// if cmd == "live"
+	if cmd == "live" {
+
+	}
 
 	return errors.New("command not found")
 }

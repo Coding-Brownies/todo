@@ -3,7 +3,6 @@ package jsonrepo
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"strconv"
@@ -52,10 +51,6 @@ func (j *JSONRepo) List() ([]entity.Task, error) {
 		if err := json.Unmarshal(content, &res); err != nil {
 			return nil, err
 		}
-	}
-
-	for i := 0; i < len(res); i++ {
-		res[i].ID = fmt.Sprint(i)
 	}
 
 	return res, nil
