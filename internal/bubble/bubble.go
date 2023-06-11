@@ -46,26 +46,26 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				i.Done = !i.Done
 				m.list.SetItem(m.list.Index(), i)
 			}
-			return m, m.Init()
+			break
 		case "shift+up":
 			if m.editing {
 				break
 			}
 			cur, ok := m.list.SelectedItem().(entity.Task)
 			if !ok {
-				return m, m.Init()
+				break
 			}
 			m.list.Select(m.list.Index() - 1)
 			above, ok := m.list.SelectedItem().(entity.Task)
 			if !ok {
 				m.list.Select(m.list.Index() + 1)
-				return m, m.Init()
+				break
 			}
 
 			m.list.SetItem(m.list.Index(), cur)
 			m.list.SetItem(m.list.Index()+1, above)
 
-			return m, m.Init()
+			break
 
 		case "shift+down":
 			if m.editing {
@@ -73,13 +73,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			cur, ok := m.list.SelectedItem().(entity.Task)
 			if !ok {
-				return m, m.Init()
+				break
 			}
 			m.list.Select(m.list.Index() + 1)
 			below, ok := m.list.SelectedItem().(entity.Task)
 			if !ok {
 				m.list.Select(m.list.Index() - 1)
-				return m, m.Init()
+				break
 			}
 
 			m.list.SetItem(m.list.Index(), cur)
@@ -91,7 +91,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			m.list.InsertItem(m.list.Index(), entity.Task{})
 			m.list.Select(m.list.Index())
-			return m, m.Init()
+
+			break
 		case "delete", "backspace":
 			if m.editing {
 				break
@@ -102,7 +103,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				m.list.RemoveItem(m.list.Index())
 			}
-			return m, m.Init()
+			break
 		case "shift+right":
 			if m.editing {
 				break
@@ -110,17 +111,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.editing = true
 			cur, ok := m.list.SelectedItem().(entity.Task)
 			if !ok {
-				return m, m.Init()
+				break
 			}
 			m.textInput.SetValue(cur.Description)
-			return m, m.Init()
+			break
 		case "shift+left":
 			if !m.editing {
 				break
 			}
 			cur, ok := m.list.SelectedItem().(entity.Task)
 			if !ok {
-				return m, m.Init()
+				break
 			}
 
 			m.list.SetItem(m.list.Index(), entity.Task{
@@ -128,9 +129,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				Description: m.textInput.Value(),
 			})
 			m.editing = false
-			return m, m.Init()
+			break
 		case "esc":
-			return m, m.Init()
+			break
 		}
 
 	// We handle errors just like any other message
@@ -232,13 +233,15 @@ func Run(tasks []entity.Task) []entity.Task {
 		textInput: ta,
 	}
 
-	if _, err := tea.NewProgram(m).Run(); err != nil {
+	pg := tea.NewProgram(m)
+	endmodel, err := pg.Run()
+	if err != nil {
 		fmt.Println("Error running program:", err)
 		os.Exit(1)
 	}
 
 	var res []entity.Task
-	for _, item := range m.list.Items() {
+	for _, item := range endmodel.(model).list.Items() {
 		res = append(res, item.(entity.Task))
 	}
 	return res

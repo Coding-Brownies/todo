@@ -92,7 +92,6 @@ func (a *App) Run(cmd string, args ...string) error {
 		}
 
 		res := bubble.Run(tasks)
-
 		return a.repo.Store(res)
 	}
 
