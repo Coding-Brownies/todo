@@ -225,7 +225,7 @@ func Run(tasks []entity.Task) []entity.Task {
 	l.SetShowStatusBar(false)
 	l.SetFilteringEnabled(false)
 	l.Styles.Title = lipgloss.NewStyle().Height(0).Margin(0, 0, 0, 0).Padding(0, 0, 0, 0)
-	l.Styles.PaginationStyle = list.DefaultStyles().PaginationStyle.PaddingLeft(0)
+	l.Styles.PaginationStyle = list.DefaultStyles().PaginationStyle.PaddingLeft(5)
 	l.Styles.HelpStyle = list.DefaultStyles().HelpStyle.PaddingLeft(2)
 
 	m := model{
