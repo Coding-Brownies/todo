@@ -3,6 +3,7 @@ package app
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/Coding-Brownies/todo/internal/bubble"
 	"github.com/Coding-Brownies/todo/internal/entity"
@@ -29,13 +30,19 @@ func (a *App) Run(cmd string, args ...string) error {
 		if err != nil {
 			return err
 		}
-		for i, t := range tasks {
+		for _, t := range tasks {
 			if t.Done {
 				fmt.Print(entity.CheckDone)
 			} else {
 				fmt.Print(entity.CheckToDo)
 			}
-			fmt.Println(" ", i, t.Description)
+
+			// remove multiple lines
+			str := t.Description
+			if idx := strings.Index(str, "\n"); idx != -1 {
+				str = str[:idx] + "..."
+			}
+			fmt.Println(" ", str)
 		}
 
 		return nil
