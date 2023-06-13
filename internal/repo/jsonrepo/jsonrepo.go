@@ -3,13 +3,12 @@ package jsonrepo
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"strconv"
 
-	"github.com/Coding-Brownies/todo/app"
-	"github.com/Coding-Brownies/todo/entity"
+	"github.com/Coding-Brownies/todo/internal/app"
+	"github.com/Coding-Brownies/todo/internal/entity"
 )
 
 var _ app.Repo = &JSONRepo{}
@@ -54,10 +53,6 @@ func (j *JSONRepo) List() ([]entity.Task, error) {
 		}
 	}
 
-	for i := 0; i < len(res); i++ {
-		res[i].ID = fmt.Sprint(i)
-	}
-
 	return res, nil
 }
 
@@ -69,11 +64,11 @@ func (j *JSONRepo) Add(t *entity.Task) error {
 
 	tasks = append(tasks, *t)
 
-	err = j.store(tasks)
+	err = j.Store(tasks)
 	return err
 }
 
-func (j *JSONRepo) store(tasks []entity.Task) error {
+func (j *JSONRepo) Store(tasks []entity.Task) error {
 	// conversione di tasks in JSON
 	content, err := json.Marshal(tasks)
 	if err != nil {
@@ -116,7 +111,7 @@ func (j *JSONRepo) Delete(id string) error {
 
 	tasks = append(tasks[:index], tasks[index+1:]...)
 
-	err = j.store(tasks)
+	err = j.Store(tasks)
 	return err
 }
 
@@ -128,7 +123,7 @@ func (j *JSONRepo) Check(id string) error {
 
 	tasks[index].Done = true
 
-	err = j.store(tasks)
+	err = j.Store(tasks)
 	return err
 }
 
@@ -140,7 +135,7 @@ func (j *JSONRepo) Uncheck(id string) error {
 
 	tasks[index].Done = false
 
-	err = j.store(tasks)
+	err = j.Store(tasks)
 	return err
 }
 
@@ -152,8 +147,6 @@ func (j *JSONRepo) Edit(id string, newDescription string) error {
 
 	tasks[index].Description = newDescription
 
-	err = j.store(tasks)
+	err = j.Store(tasks)
 	return err
 }
-
-// func Live

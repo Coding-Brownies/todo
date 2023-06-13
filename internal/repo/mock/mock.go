@@ -1,8 +1,8 @@
 package mock
 
 import (
-	"github.com/Coding-Brownies/todo/app"
-	"github.com/Coding-Brownies/todo/entity"
+	"github.com/Coding-Brownies/todo/internal/app"
+	"github.com/Coding-Brownies/todo/internal/entity"
 )
 
 var _ app.Repo = &MockRepo{}
@@ -41,4 +41,6 @@ func (m *MockRepo) Edit(id string, newDescription string) error {
 	return nil
 }
 
-// func Live
+func (m *MockRepo) Store([]entity.Task) error {
+	return nil
+}

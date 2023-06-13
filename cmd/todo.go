@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Coding-Brownies/todo/app"
-	"github.com/Coding-Brownies/todo/repo/jsonrepo"
+	"github.com/Coding-Brownies/todo/internal/app"
+	"github.com/Coding-Brownies/todo/internal/repo/jsonrepo"
 )
 
 func main() {
@@ -15,7 +15,7 @@ func main() {
 	a := app.New(r)
 
 	if len(os.Args) < 2 {
-		os.Args = append(os.Args, "ls")
+		os.Args = append(os.Args, "live")
 	}
 	// i secondi sono le cose dopo add
 	// tipo go run main.go add "ciao patata"

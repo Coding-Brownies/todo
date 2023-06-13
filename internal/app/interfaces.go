@@ -1,6 +1,6 @@
 package app
 
-import "github.com/Coding-Brownies/todo/entity"
+import "github.com/Coding-Brownies/todo/internal/entity"
 
 type Repo interface {
 	List() ([]entity.Task, error)
@@ -9,5 +9,5 @@ type Repo interface {
 	Check(ID string) error
 	Uncheck(ID string) error
 	Edit(ID string, newDescription string) error
-	// Live
+	Store([]entity.Task) error
 }
