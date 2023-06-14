@@ -1,5 +1,5 @@
 <p align="center">
-    <img style="width:15em;" src="./assets/mascott.png" alt="jim">
+    <img style="width:20em;" src="./assets/mascott.png" alt="jim">
 </p>
 
 # todo
