@@ -3,4 +3,4 @@
 A simple todo app built in golang
 
 
-![demo.gif](assets/demo.gif)
+<img style="width:8em;" src="./assets/demo.gif" alt="jim">
