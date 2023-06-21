@@ -5,6 +5,7 @@ const CheckToDo = "◻"
 const CheckDone = "◼"
 
 type Task struct {
+	ID			string
 	Done        bool
 	Description string
 }

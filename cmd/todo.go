@@ -10,8 +10,14 @@ import (
 )
 
 func main() {
-
+	/* una volta finita dbrepo:
+	r, err := dbrepo.New(os.Getenv("HOME") + "/.local/share/store.db")
+	if err != nil {
+		fmt.Println("Error: ", err)
+	}
+	*/
 	r := jsonrepo.New(os.Getenv("HOME") + "/.local/share/store.json")
+
 	a := app.New(r)
 
 	if len(os.Args) < 2 {
