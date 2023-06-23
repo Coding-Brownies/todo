@@ -12,24 +12,20 @@ import (
 
 type App struct {
 	repo Repo
-	cfg *config.Config
+	cfg  *config.Config
 }
 
 // funzione new restituisce un riferimento ad App
-func New(cfg *config.Config,r Repo) *App {
+func New(cfg *config.Config, r Repo) *App {
 
 	return &App{
 		repo: r,
-		cfg: cfg,
+		cfg:  cfg,
 	}
 }
 
 // metodo run
 func (a *App) Run(cmd string, args ...string) error {
-	if cmd == "cfg"{
-		fmt.Println(a.cfg)
-		return nil
-	}
 
 	if cmd == "ls" {
 		if len(args) != 0 {
@@ -73,7 +69,7 @@ func (a *App) Run(cmd string, args ...string) error {
 		}
 		return nil
 	}
-	
+
 	if cmd == "live" {
 		if len(args) != 0 {
 			return errors.New("live accept no argument")
