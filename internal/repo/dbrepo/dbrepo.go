@@ -30,8 +30,10 @@ func New(dbpath string) (*DBRepo, error) {
 
 func (db *DBRepo) List() ([]entity.Task, error) {
 	var res []entity.Task
-	// TODO: print while ordering with Position
-	err := db.Find(&res).Error
+	// print while ordering by Position (type time.Time)
+
+	err := db.Order("position").Find(&res).Error
+
 	// in caso di errore res è vuoto
 	return res, err
 }
@@ -88,5 +90,6 @@ func (db *DBRepo) Swap(IDa string, IDb string) error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }

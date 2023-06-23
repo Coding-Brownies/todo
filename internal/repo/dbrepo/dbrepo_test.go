@@ -1,9 +1,7 @@
 package dbrepo_test
 
 import (
-	"fmt"
 	"testing"
-	"time"
 
 	"github.com/Coding-Brownies/todo/internal/entity"
 	"github.com/Coding-Brownies/todo/internal/repo/dbrepo"
@@ -133,7 +131,6 @@ func TestSwap(t *testing.T) {
 	for _, task := range tasks {
 		err = r.Add(&task)
 		assert.NoError(t, err)
-		time.Sleep(1 * time.Second)
 	}
 
 	res, err := r.List()
@@ -146,7 +143,6 @@ func TestSwap(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Len(t, res, 2)
-	fmt.Println(res)
 	assert.Equal(t, res[0].Description, "cotechinoB")
 
 	err = r.Delete(res[0].ID)

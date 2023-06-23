@@ -16,8 +16,6 @@ func main() {
 		fmt.Println("Error: ", err)
 	}
 
-	// r := jsonrepo.New(os.Getenv("HOME") + "/.local/share/store.json")
-
 	a := app.New(r)
 
 	if len(os.Args) < 2 {
