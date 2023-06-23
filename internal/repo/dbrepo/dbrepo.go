@@ -66,3 +66,18 @@ func (db *DBRepo) Store(tasks []entity.Task) error {
 func (db *DBRepo) Edit(ID string, newDescription string) error {
 	return db.Model(&entity.Task{}).Where("id=?", ID).Update("description", newDescription).Error
 }
+
+func (db *DBRepo) Swap(IDa string, IDb string) error {
+	positionA := db.Select("position").Find(&entity.Task{}, "id=?", IDa)
+	positionB := db.Select("position").Find(&entity.Task{}, "id=?", IDb)
+
+	errA := db.Model(&entity.Task{}).Where("id=?", IDa).Update("position", positionB).Error
+	if errA != nil {
+		return errA
+	}
+	errB := db.Model(&entity.Task{}).Where("id=?", IDb).Update("position", positionA).Error
+	if errB != nil {
+		return errB
+	}
+	return nil
+}

@@ -8,7 +8,7 @@ type Task struct {
 	ID          string
 	Done        bool
 	Description string
-	Position    int `gorm:"autoIncrement"`
+	Position    uint `gorm:"autoIncrement"`
 }
 
 func (t Task) FilterValue() string { return "" }

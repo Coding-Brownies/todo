@@ -97,11 +97,10 @@ func TestEdit(t *testing.T) {
 	err = r.Add(task)
 	assert.NoError(t, err)
 
-
 	res, err := r.List()
 	assert.NoError(t, err)
 
-	err = r.Edit( res[0].ID, "ghes")
+	err = r.Edit(res[0].ID, "ghes")
 	assert.NoError(t, err)
 
 	res, err = r.List()
@@ -111,5 +110,37 @@ func TestEdit(t *testing.T) {
 	assert.Equal(t, "ghes", res[0].Description)
 
 	err = r.Delete(res[0].ID)
+	assert.NoError(t, err)
+}
+
+func TestSwap(t *testing.T) {
+	r, err := dbrepo.New("/tmp/store.db")
+	assert.NoError(t, err)
+
+	tasks := []entity.Task{
+		{
+			ID:          "IDa",
+			Position:    1,
+			Description: "calamaroA",
+			Done:        false,
+		},
+		{
+			ID:          "IDb",
+			Position:    2,
+			Description: "cotechinoB",
+			Done:        true,
+		},
+	}
+	err = r.Swap(tasks[0].ID, tasks[1].ID)
+	assert.NoError(t, err)
+
+	res, err := r.List()
+	assert.NoError(t, err)
+
+	assert.Len(t, res, 2)
+
+	err = r.Delete(res[0].ID)
+	assert.NoError(t, err)
+	err = r.Delete(res[1].ID)
 	assert.NoError(t, err)
 }

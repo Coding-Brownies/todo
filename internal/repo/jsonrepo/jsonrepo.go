@@ -150,3 +150,17 @@ func (j *JSONRepo) Edit(id string, newDescription string) error {
 	err = j.Store(tasks)
 	return err
 }
+
+func (j *JSONRepo) Swap(IDa string, IDb string) error {
+	indexA, tasksA, errA := j.idAndListCheck(IDa)
+	if errA != nil {
+		return errA
+	}
+	indexB, tasksB, errB := j.idAndListCheck(IDb)
+	if errB != nil {
+		return errB
+	}
+	tasksA[indexA].Position = tasksB[indexB].Position
+	tasksB[indexB].Position = tasksA[indexA].Position
+	return nil
+}
