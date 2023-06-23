@@ -30,6 +30,7 @@ func New(dbpath string) (*DBRepo, error) {
 
 func (db *DBRepo) List() ([]entity.Task, error) {
 	var res []entity.Task
+	// TODO: print while ordering with Position
 	err := db.Find(&res).Error
 	// in caso di errore res è vuoto
 	return res, err
@@ -68,16 +69,24 @@ func (db *DBRepo) Edit(ID string, newDescription string) error {
 }
 
 func (db *DBRepo) Swap(IDa string, IDb string) error {
-	positionA := db.Select("position").Find(&entity.Task{}, "id=?", IDa)
-	positionB := db.Select("position").Find(&entity.Task{}, "id=?", IDb)
+	var a, b entity.Task
 
-	errA := db.Model(&entity.Task{}).Where("id=?", IDa).Update("position", positionB).Error
-	if errA != nil {
-		return errA
+	err := db.Select("position").Take(&a, "id=?", IDa).Error
+	if err != nil {
+		return err
 	}
-	errB := db.Model(&entity.Task{}).Where("id=?", IDb).Update("position", positionA).Error
-	if errB != nil {
-		return errB
+	err = db.Select("position").Take(&b, "id=?", IDb).Error
+	if err != nil {
+		return err
+	}
+
+	err = db.Model(&entity.Task{}).Where("id=?", IDa).Update("position", b.Position).Error
+	if err != nil {
+		return err
+	}
+	err = db.Model(&entity.Task{}).Where("id=?", IDb).Update("position", a.Position).Error
+	if err != nil {
+		return err
 	}
 	return nil
 }

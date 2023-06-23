@@ -1,7 +1,9 @@
 package dbrepo_test
 
 import (
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/Coding-Brownies/todo/internal/entity"
 	"github.com/Coding-Brownies/todo/internal/repo/dbrepo"
@@ -119,25 +121,33 @@ func TestSwap(t *testing.T) {
 
 	tasks := []entity.Task{
 		{
-			ID:          "IDa",
-			Position:    1,
 			Description: "calamaroA",
 			Done:        false,
 		},
 		{
-			ID:          "IDb",
-			Position:    2,
 			Description: "cotechinoB",
 			Done:        true,
 		},
 	}
-	err = r.Swap(tasks[0].ID, tasks[1].ID)
-	assert.NoError(t, err)
+
+	for _, task := range tasks {
+		err = r.Add(&task)
+		assert.NoError(t, err)
+		time.Sleep(1 * time.Second)
+	}
 
 	res, err := r.List()
 	assert.NoError(t, err)
 
+	err = r.Swap(res[0].ID, res[1].ID)
+	assert.NoError(t, err)
+
+	res, err = r.List()
+	assert.NoError(t, err)
+
 	assert.Len(t, res, 2)
+	fmt.Println(res)
+	assert.Equal(t, res[0].Description, "cotechinoB")
 
 	err = r.Delete(res[0].ID)
 	assert.NoError(t, err)
