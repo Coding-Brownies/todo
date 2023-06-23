@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/Coding-Brownies/todo/config"
 	"github.com/Coding-Brownies/todo/internal/entity"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textarea"
@@ -16,11 +17,11 @@ import (
 const defaultWidth = 20
 
 type model struct {
+	cfg       *config.Config
 	list      list.Model
 	textInput textarea.Model
 	err       error
 	editing   bool
-	quitting  bool
 }
 
 func (m model) Init() tea.Cmd {
@@ -35,10 +36,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		switch keypress := msg.String(); keypress {
-		case "ctrl+c":
+		case m.cfg.Quit:
 			return m, tea.Quit
 
-		case " ":
+		case m.cfg.Check:
 			if m.editing {
 				break
 			}
@@ -46,8 +47,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				i.Done = !i.Done
 				m.list.SetItem(m.list.Index(), i)
 			}
-			break
-		case "shift+up":
+
+		case m.cfg.SwapUp:
 			if m.editing {
 				break
 			}
@@ -65,9 +66,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.list.SetItem(m.list.Index(), cur)
 			m.list.SetItem(m.list.Index()+1, above)
 
-			break
-
-		case "shift+down":
+		case m.cfg.SwapDown:
 			if m.editing {
 				break
 			}
@@ -84,7 +83,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			m.list.SetItem(m.list.Index(), cur)
 			m.list.SetItem(m.list.Index()-1, below)
-		case "enter":
+
+		case m.cfg.Insert:
 			if m.editing {
 				break
 			}
@@ -92,7 +92,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.list.InsertItem(m.list.Index(), entity.Task{})
 			m.list.Select(m.list.Index())
 
-			break
 		case "delete", "backspace":
 			if m.editing {
 				break
@@ -103,8 +102,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				m.list.RemoveItem(m.list.Index())
 			}
-			break
-		case "shift+right":
+
+		case m.cfg.Edit:
 			if m.editing {
 				break
 			}
@@ -114,8 +113,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				break
 			}
 			m.textInput.SetValue(cur.Description)
-			break
-		case "shift+left":
+
+		case m.cfg.EditExit:
 			if !m.editing {
 				break
 			}
@@ -129,9 +128,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				Description: m.textInput.Value(),
 			})
 			m.editing = false
-			break
-		case "esc":
-			break
+			return m, m.Init()
 		}
 
 	// We handle errors just like any other message
@@ -199,7 +196,7 @@ var (
 	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2)
 )
 
-func Run(tasks []entity.Task) []entity.Task {
+func Run(cfg *config.Config, tasks []entity.Task) []entity.Task {
 
 	items := make([]list.Item, len(tasks))
 	for i, v := range tasks {
@@ -231,6 +228,7 @@ func Run(tasks []entity.Task) []entity.Task {
 	m := model{
 		list:      l,
 		textInput: ta,
+		cfg:       cfg,
 	}
 
 	pg := tea.NewProgram(m)
