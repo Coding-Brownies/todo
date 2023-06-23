@@ -5,23 +5,32 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Coding-Brownies/todo/config"
 	"github.com/Coding-Brownies/todo/internal/bubble"
 	"github.com/Coding-Brownies/todo/internal/entity"
 )
 
 type App struct {
 	repo Repo
+	cfg *config.Config
 }
 
 // funzione new restituisce un riferimento ad App
-func New(r Repo) *App {
+func New(cfg *config.Config,r Repo) *App {
+
 	return &App{
 		repo: r,
+		cfg: cfg,
 	}
 }
 
 // metodo run
 func (a *App) Run(cmd string, args ...string) error {
+	if cmd == "cfg"{
+		fmt.Println(a.cfg)
+		return nil
+	}
+
 	if cmd == "ls" {
 		if len(args) != 0 {
 			return errors.New("list accept no argument")
@@ -47,6 +56,7 @@ func (a *App) Run(cmd string, args ...string) error {
 
 		return nil
 	}
+
 	if cmd == "add" {
 		if len(args) != 1 {
 			return errors.New("add accept only one argument")
@@ -73,7 +83,7 @@ func (a *App) Run(cmd string, args ...string) error {
 			return err
 		}
 
-		res := bubble.Run(tasks)
+		res := bubble.Run(a.cfg, tasks)
 		return a.repo.Store(res)
 	}
 
