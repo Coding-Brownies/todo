@@ -5,9 +5,10 @@ const CheckToDo = "◻"
 const CheckDone = "◼"
 
 type Task struct {
-	ID			string
+	ID          string
 	Done        bool
 	Description string
+	Position    int `gorm:"autoIncrement"`
 }
 
 func (t Task) FilterValue() string { return "" }

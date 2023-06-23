@@ -44,3 +44,8 @@ func (m *MockRepo) Edit(id string, newDescription string) error {
 func (m *MockRepo) Store([]entity.Task) error {
 	return nil
 }
+
+// Swap implements app.Repo
+func (*MockRepo) Swap(IDa string, IDb string) error {
+	return nil
+}
