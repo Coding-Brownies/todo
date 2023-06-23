@@ -63,32 +63,7 @@ func (a *App) Run(cmd string, args ...string) error {
 		}
 		return nil
 	}
-	if cmd == "delete" {
-		if len(args) != 1 {
-			return errors.New("delete accept only one argument")
-		}
-		return a.repo.Delete(args[0])
-	}
-	if cmd == "check" {
-		if len(args) != 1 {
-			return errors.New("check accept only one argument")
-		}
-		return a.repo.Check(args[0])
-	}
-	if cmd == "uncheck" {
-		if len(args) != 1 {
-			return errors.New("uncheck accept only one argument")
-		}
-		return a.repo.Uncheck(args[0])
-	}
-
-	if cmd == "edit" {
-		if len(args) != 2 {
-			return errors.New("edit accept 2 arguments")
-		}
-		return a.repo.Edit(args[0], args[1])
-	}
-
+	
 	if cmd == "live" {
 		if len(args) != 0 {
 			return errors.New("live accept no argument")

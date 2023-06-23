@@ -6,12 +6,16 @@ import (
 	"os"
 
 	"github.com/Coding-Brownies/todo/internal/app"
-	"github.com/Coding-Brownies/todo/internal/repo/jsonrepo"
+	"github.com/Coding-Brownies/todo/internal/repo/dbrepo"
 )
 
 func main() {
 
-	r := jsonrepo.New(os.Getenv("HOME") + "/.local/share/store.json")
+	r, err := dbrepo.New(os.Getenv("HOME") + "/.local/share/store.db")
+	if err != nil {
+		fmt.Println("Error: ", err)
+	}
+
 	a := app.New(r)
 
 	if len(os.Args) < 2 {
@@ -19,7 +23,7 @@ func main() {
 	}
 	// i secondi sono le cose dopo add
 	// tipo go run main.go add "ciao patata"
-	err := a.Run(os.Args[1], os.Args[2:]...)
+	err = a.Run(os.Args[1], os.Args[2:]...)
 
 	if err != nil {
 		fmt.Println("Error: ", err)
