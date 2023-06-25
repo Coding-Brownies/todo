@@ -8,6 +8,7 @@ import (
 
 	"github.com/Coding-Brownies/todo/config"
 	"github.com/Coding-Brownies/todo/internal/entity"
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
@@ -16,8 +17,19 @@ import (
 
 const defaultWidth = 20
 
+type keymap struct {
+	check    key.Binding
+	quit     key.Binding
+	swapUp   key.Binding
+	swapDown key.Binding
+	delete   key.Binding
+	insert   key.Binding
+	edit     key.Binding
+	editExit key.Binding
+}
+
 type model struct {
-	cfg       *config.Config
+	keymap    keymap
 	list      list.Model
 	textInput textarea.Model
 	err       error
@@ -35,11 +47,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
-		switch keypress := msg.String(); keypress {
-		case m.cfg.Quit:
+		switch {
+		case key.Matches(msg, m.keymap.quit):
 			return m, tea.Quit
 
-		case m.cfg.Check:
+		case key.Matches(msg, m.keymap.check):
 			if m.editing {
 				break
 			}
@@ -48,7 +60,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.list.SetItem(m.list.Index(), i)
 			}
 
-		case m.cfg.SwapUp:
+		case key.Matches(msg, m.keymap.swapUp):
 			if m.editing {
 				break
 			}
@@ -66,7 +78,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.list.SetItem(m.list.Index(), cur)
 			m.list.SetItem(m.list.Index()+1, above)
 
-		case m.cfg.SwapDown:
+		case key.Matches(msg, m.keymap.swapDown):
 			if m.editing {
 				break
 			}
@@ -84,7 +96,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.list.SetItem(m.list.Index(), cur)
 			m.list.SetItem(m.list.Index()-1, below)
 
-		case m.cfg.Insert:
+		case key.Matches(msg, m.keymap.insert):
 			if m.editing {
 				break
 			}
@@ -92,7 +104,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.list.InsertItem(m.list.Index(), entity.Task{})
 			m.list.Select(m.list.Index())
 
-		case "delete", "backspace":
+		case key.Matches(msg, m.keymap.delete):
 			if m.editing {
 				break
 			}
@@ -103,7 +115,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.list.RemoveItem(m.list.Index())
 			}
 
-		case m.cfg.Edit:
+		case key.Matches(msg, m.keymap.edit):
 			if m.editing {
 				break
 			}
@@ -114,7 +126,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.textInput.SetValue(cur.Description)
 
-		case m.cfg.EditExit:
+		case key.Matches(msg, m.keymap.editExit):
 			if !m.editing {
 				break
 			}
@@ -228,7 +240,12 @@ func Run(cfg *config.Config, tasks []entity.Task) []entity.Task {
 	m := model{
 		list:      l,
 		textInput: ta,
-		cfg:       cfg,
+		keymap: keymap{
+			check: key.NewBinding(
+				key.WithKeys(cfg.Check),
+				key.WithHelp(cfg.Check, "(un)check the tasks"),
+			),
+		},
 	}
 
 	pg := tea.NewProgram(m)
