@@ -26,6 +26,8 @@ type keymap struct {
 	insert   key.Binding
 	edit     key.Binding
 	editExit key.Binding
+	up       key.Binding
+	down     key.Binding
 }
 
 type model struct {
@@ -48,6 +50,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		switch {
+		case key.Matches(msg, m.keymap.up):
+			before := m.list.Index() - 1
+			if before < 0 {
+				before = 0
+			}
+			m.list.Select(before)
+
+		case key.Matches(msg, m.keymap.down):
+			next := m.list.Index() + 1
+			if next > len(m.list.Items())-1 {
+				next = len(m.list.Items()) - 1
+			}
+			m.list.Select(next)
+
 		case key.Matches(msg, m.keymap.quit):
 			return m, tea.Quit
 
@@ -140,7 +156,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				Description: m.textInput.Value(),
 			})
 			m.editing = false
-			return m, m.Init()
 		}
 
 	// We handle errors just like any other message
@@ -156,8 +171,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	}
 
-	m.list, cmd = m.list.Update(msg)
-	return m, cmd
+	return m, m.Init()
 }
 
 func (m model) View() string {
@@ -262,12 +276,19 @@ func Run(cfg *config.Config, tasks []entity.Task) []entity.Task {
 			key.WithKeys(cfg.EditExit),
 			key.WithHelp(cfg.EditExit, "edit exit"),
 		),
+		up: key.NewBinding(
+			key.WithKeys("up"),
+			key.WithHelp("up", ""),
+		),
+		down: key.NewBinding(
+			key.WithKeys("down"),
+			key.WithHelp("down", ""),
+		),
 	}
-
-	l.SetShowHelp(false)
 
 	// build the list
 	l.Title = ""
+	l.SetShowHelp(false)
 	l.SetShowStatusBar(false)
 	l.SetFilteringEnabled(false)
 	l.Styles.Title = lipgloss.NewStyle().Height(0).Margin(0, 0, 0, 0).Padding(0, 0, 0, 0)
