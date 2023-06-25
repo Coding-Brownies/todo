@@ -22,7 +22,7 @@ type keymap struct {
 	quit     key.Binding
 	swapUp   key.Binding
 	swapDown key.Binding
-	delete   key.Binding
+	remove   key.Binding
 	insert   key.Binding
 	edit     key.Binding
 	editExit key.Binding
@@ -104,7 +104,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.list.InsertItem(m.list.Index(), entity.Task{})
 			m.list.Select(m.list.Index())
 
-		case key.Matches(msg, m.keymap.delete):
+		case key.Matches(msg, m.keymap.remove):
 			if m.editing {
 				break
 			}
@@ -229,6 +229,43 @@ func Run(cfg *config.Config, tasks []entity.Task) []entity.Task {
 		10,
 	)
 
+	keyMap := keymap{
+		check: key.NewBinding(
+			key.WithKeys(cfg.Check),
+			key.WithHelp(cfg.Check, "(un)check the tasks"),
+		),
+		quit: key.NewBinding(
+			key.WithKeys(cfg.Quit),
+			key.WithHelp(cfg.Quit, "quit"),
+		),
+		swapUp: key.NewBinding(
+			key.WithKeys(cfg.SwapUp),
+			key.WithHelp(cfg.SwapUp, "swap up"),
+		),
+		swapDown: key.NewBinding(
+			key.WithKeys(cfg.SwapDown),
+			key.WithHelp(cfg.SwapDown, "swap down"),
+		),
+		remove: key.NewBinding(
+			key.WithKeys(cfg.Remove),
+			key.WithHelp(cfg.Remove, "remove"),
+		),
+		insert: key.NewBinding(
+			key.WithKeys(cfg.Insert),
+			key.WithHelp(cfg.Insert, "insert a new task"),
+		),
+		edit: key.NewBinding(
+			key.WithKeys(cfg.Edit),
+			key.WithHelp(cfg.Edit, "edit"),
+		),
+		editExit: key.NewBinding(
+			key.WithKeys(cfg.EditExit),
+			key.WithHelp(cfg.EditExit, "edit exit"),
+		),
+	}
+
+	l.SetShowHelp(false)
+
 	// build the list
 	l.Title = ""
 	l.SetShowStatusBar(false)
@@ -240,12 +277,7 @@ func Run(cfg *config.Config, tasks []entity.Task) []entity.Task {
 	m := model{
 		list:      l,
 		textInput: ta,
-		keymap: keymap{
-			check: key.NewBinding(
-				key.WithKeys(cfg.Check),
-				key.WithHelp(cfg.Check, "(un)check the tasks"),
-			),
-		},
+		keymap:    keyMap,
 	}
 
 	pg := tea.NewProgram(m)
