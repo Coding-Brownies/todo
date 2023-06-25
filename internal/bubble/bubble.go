@@ -2,9 +2,7 @@ package bubble
 
 import (
 	"fmt"
-	"io"
 	"os"
-	"strings"
 
 	"github.com/Coding-Brownies/todo/config"
 	"github.com/Coding-Brownies/todo/internal/entity"
@@ -17,25 +15,13 @@ import (
 
 const defaultWidth = 20
 
-type keymap struct {
-	check    key.Binding
-	quit     key.Binding
-	swapUp   key.Binding
-	swapDown key.Binding
-	remove   key.Binding
-	insert   key.Binding
-	edit     key.Binding
-	editExit key.Binding
-	up       key.Binding
-	down     key.Binding
-}
-
 type model struct {
-	keymap    keymap
+	keymap    KeyMap
 	list      list.Model
 	textInput textarea.Model
 	err       error
 	editing   bool
+	bigHelp   bool
 }
 
 func (m model) Init() tea.Cmd {
@@ -50,24 +36,24 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, m.keymap.up):
+		case key.Matches(msg, m.keymap.Up):
 			before := m.list.Index() - 1
 			if before < 0 {
 				before = 0
 			}
 			m.list.Select(before)
 
-		case key.Matches(msg, m.keymap.down):
+		case key.Matches(msg, m.keymap.Down):
 			next := m.list.Index() + 1
 			if next > len(m.list.Items())-1 {
 				next = len(m.list.Items()) - 1
 			}
 			m.list.Select(next)
 
-		case key.Matches(msg, m.keymap.quit):
+		case key.Matches(msg, m.keymap.Quit):
 			return m, tea.Quit
 
-		case key.Matches(msg, m.keymap.check):
+		case key.Matches(msg, m.keymap.Check):
 			if m.editing {
 				break
 			}
@@ -76,7 +62,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.list.SetItem(m.list.Index(), i)
 			}
 
-		case key.Matches(msg, m.keymap.swapUp):
+		case key.Matches(msg, m.keymap.SwapUp):
 			if m.editing {
 				break
 			}
@@ -94,7 +80,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.list.SetItem(m.list.Index(), cur)
 			m.list.SetItem(m.list.Index()+1, above)
 
-		case key.Matches(msg, m.keymap.swapDown):
+		case key.Matches(msg, m.keymap.SwapDown):
 			if m.editing {
 				break
 			}
@@ -112,7 +98,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.list.SetItem(m.list.Index(), cur)
 			m.list.SetItem(m.list.Index()-1, below)
 
-		case key.Matches(msg, m.keymap.insert):
+		case key.Matches(msg, m.keymap.Insert):
 			if m.editing {
 				break
 			}
@@ -120,7 +106,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.list.InsertItem(m.list.Index(), entity.Task{})
 			m.list.Select(m.list.Index())
 
-		case key.Matches(msg, m.keymap.remove):
+		case key.Matches(msg, m.keymap.Remove):
 			if m.editing {
 				break
 			}
@@ -131,7 +117,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.list.RemoveItem(m.list.Index())
 			}
 
-		case key.Matches(msg, m.keymap.edit):
+		case key.Matches(msg, m.keymap.Edit):
 			if m.editing {
 				break
 			}
@@ -142,7 +128,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.textInput.SetValue(cur.Description)
 
-		case key.Matches(msg, m.keymap.editExit):
+		case key.Matches(msg, m.keymap.EditExit):
 			if !m.editing {
 				break
 			}
@@ -182,52 +168,17 @@ func (m model) View() string {
 			"(esc to quit)",
 		) + "\n"
 	}
-	return m.list.View()
+
+	help := m.list.Help.ShortHelpView(m.keymap.ShortHelp())
+	if m.bigHelp {
+		help = m.list.Help.FullHelpView(m.keymap.FullHelp())
+	}
+
+	return m.list.View() +
+		m.list.Styles.HelpStyle.Render(help)
 }
 
-type taskDelegate struct{}
-
-func (d taskDelegate) Height() int                               { return 1 }
-func (d taskDelegate) Spacing() int                              { return 0 }
-func (d taskDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd { return nil }
-func (d taskDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
-	i, ok := listItem.(entity.Task)
-	if !ok {
-		return
-	}
-
-	state := entity.CheckToDo
-	if i.Done {
-		state = entity.CheckDone
-	}
-	str := fmt.Sprintf("%s %s", state, i.Description)
-
-	// remove multiple lines
-	if idx := strings.Index(str, "\n"); idx != -1 {
-		str = str[:idx] + "..."
-	}
-
-	fn := itemStyle.Render
-	if index == m.Index() {
-		fn = func(s ...string) string {
-			return selectedItemStyle.Render("▸ " + strings.Join(s, " "))
-		}
-	}
-
-	fmt.Fprint(w, fn(str))
-}
-
-var (
-	itemStyle         = lipgloss.NewStyle().PaddingLeft(4)
-	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2)
-)
-
-func Run(cfg *config.Config, tasks []entity.Task) []entity.Task {
-
-	items := make([]list.Item, len(tasks))
-	for i, v := range tasks {
-		items[i] = v
-	}
+func New(cfg *config.Config) *model {
 
 	// build the input
 	ta := textarea.New()
@@ -237,54 +188,13 @@ func Run(cfg *config.Config, tasks []entity.Task) []entity.Task {
 	ta.MaxHeight = 30
 
 	l := list.New(
-		items,
-		taskDelegate{},
+		[]list.Item{},
+		customItemRender{},
 		defaultWidth,
 		10,
 	)
 
-	keyMap := keymap{
-		check: key.NewBinding(
-			key.WithKeys(cfg.Check),
-			key.WithHelp(cfg.Check, "(un)check the tasks"),
-		),
-		quit: key.NewBinding(
-			key.WithKeys(cfg.Quit),
-			key.WithHelp(cfg.Quit, "quit"),
-		),
-		swapUp: key.NewBinding(
-			key.WithKeys(cfg.SwapUp),
-			key.WithHelp(cfg.SwapUp, "swap up"),
-		),
-		swapDown: key.NewBinding(
-			key.WithKeys(cfg.SwapDown),
-			key.WithHelp(cfg.SwapDown, "swap down"),
-		),
-		remove: key.NewBinding(
-			key.WithKeys(cfg.Remove),
-			key.WithHelp(cfg.Remove, "remove"),
-		),
-		insert: key.NewBinding(
-			key.WithKeys(cfg.Insert),
-			key.WithHelp(cfg.Insert, "insert a new task"),
-		),
-		edit: key.NewBinding(
-			key.WithKeys(cfg.Edit),
-			key.WithHelp(cfg.Edit, "edit"),
-		),
-		editExit: key.NewBinding(
-			key.WithKeys(cfg.EditExit),
-			key.WithHelp(cfg.EditExit, "edit exit"),
-		),
-		up: key.NewBinding(
-			key.WithKeys("up"),
-			key.WithHelp("up", ""),
-		),
-		down: key.NewBinding(
-			key.WithKeys("down"),
-			key.WithHelp("down", ""),
-		),
-	}
+	keyMap := NewKeyMap(cfg)
 
 	// build the list
 	l.Title = ""
@@ -295,11 +205,20 @@ func Run(cfg *config.Config, tasks []entity.Task) []entity.Task {
 	l.Styles.PaginationStyle = list.DefaultStyles().PaginationStyle.PaddingLeft(5)
 	l.Styles.HelpStyle = list.DefaultStyles().HelpStyle.PaddingLeft(2)
 
-	m := model{
+	return &model{
 		list:      l,
 		textInput: ta,
-		keymap:    keyMap,
+		keymap:    *keyMap,
 	}
+}
+
+func (m *model) Run(tasks []entity.Task) []entity.Task {
+
+	items := make([]list.Item, len(tasks))
+	for i, v := range tasks {
+		items[i] = v
+	}
+	m.list.SetItems(items)
 
 	pg := tea.NewProgram(m)
 	endmodel, err := pg.Run()
