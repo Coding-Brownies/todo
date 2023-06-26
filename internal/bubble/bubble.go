@@ -29,7 +29,9 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// add a case in which the m.bigHelp field of the model is changed
 	switch msg := msg.(type) {
+
 	case tea.WindowSizeMsg:
 		m.list.SetWidth(msg.Width)
 		return m, nil
@@ -165,7 +167,7 @@ func (m model) View() string {
 		return fmt.Sprintf(
 			"\n%s\n%s",
 			m.textInput.View(),
-			"(esc to quit)",
+			"(esc to exit)",
 		) + "\n"
 	}
 

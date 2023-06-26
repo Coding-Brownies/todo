@@ -21,6 +21,7 @@ type (
 		Remove   string `yaml:"remove" env-default:"backspace"`
 		Edit     string `yaml:"edit" env-default:"shift+right"`
 		EditExit string `yaml:"editexit" env-default:"esc"`
+		More     string `yaml:"more" env-default:"?"`
 	}
 )
 
