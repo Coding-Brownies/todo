@@ -22,12 +22,13 @@ this is the default configuration:
 ```yml
 # keybindings for editing
 bubble:
-  quit: ctrl+c
+  quit: q
+  help: ?
   check: space
-  swapup: shift+up
-  swapdown: shift+down
   insert: enter
   remove: backspace
-  edit: shift+right
+  edit: right
   editexit: esc
+  swapup: shift+up
+  swapdown: shift+down
 ```

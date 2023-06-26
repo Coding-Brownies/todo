@@ -30,18 +30,17 @@ func (k *KeyMap) FullHelp() [][]key.Binding {
 		{
 			k.Quit,
 			k.Check,
-			k.Edit,
-			k.EditExit,
-		},
-		{
-			k.SwapUp,
-			k.SwapDown,
 			k.Insert,
 			k.Remove,
 		},
 		{
+			k.SwapUp,
+			k.SwapDown,
 			k.Up,
 			k.Down,
+		},
+		{
+			k.Edit,
 			k.Help,
 		},
 	}
@@ -52,9 +51,9 @@ func (k *KeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{
 		k.Quit,
 		k.Check,
-		k.Edit,
 		k.Insert,
 		k.Remove,
+		k.Edit,
 		k.Help,
 	}
 }
@@ -115,7 +114,7 @@ func NewKeyMap(cfg *config.Config) *KeyMap {
 		),
 		EditExit: key.NewBinding(
 			key.WithKeys(cfg.EditExit),
-			key.WithHelp(replaceSymbols(cfg.EditExit), "edit exit"),
+			key.WithHelp(replaceSymbols(cfg.EditExit), "to exit"),
 		),
 		Up: key.NewBinding(
 			key.WithKeys("up"),
@@ -126,8 +125,8 @@ func NewKeyMap(cfg *config.Config) *KeyMap {
 			key.WithHelp(replaceSymbols("down"), "go down"),
 		),
 		Help: key.NewBinding(
-			key.WithKeys(cfg.More),
-			key.WithHelp(replaceSymbols(cfg.More), "toggle help"),
+			key.WithKeys(cfg.Help),
+			key.WithHelp(replaceSymbols(cfg.Help), "toggle help"),
 		),
 	}
 }

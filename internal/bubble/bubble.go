@@ -178,9 +178,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	if m.editing {
 		return fmt.Sprintf(
-			"\n%s\n%s",
+			"\n%s\n\n%s",
 			m.textInput.View(),
-			"(esc to exit)",
+			m.list.Help.ShortHelpView([]key.Binding{m.keymap.EditExit}),
 		) + "\n"
 	}
 
@@ -218,7 +218,7 @@ func New(cfg *config.Config) *model {
 	l.SetFilteringEnabled(false)
 	l.Styles.Title = lipgloss.NewStyle().Height(0).Margin(0, 0, 0, 0).Padding(0, 0, 0, 0)
 	l.Styles.PaginationStyle = list.DefaultStyles().PaginationStyle.PaddingLeft(5)
-	l.Styles.HelpStyle = list.DefaultStyles().HelpStyle.PaddingLeft(2)
+	l.Styles.HelpStyle = list.DefaultStyles().HelpStyle.PaddingLeft(2).Foreground(lipgloss.Color("#000000"))
 
 	return &model{
 		list:      l,
