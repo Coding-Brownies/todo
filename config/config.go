@@ -13,14 +13,15 @@ type (
 	}
 
 	Bubble struct {
-		Quit     string `yaml:"quit" env-default:"ctrl+c"`
+		Quit     string `yaml:"quit" env-default:"q"`
 		Check    string `yaml:"check" env-default:"space"`
 		SwapUp   string `yaml:"swapup" env-default:"shift+up"`
 		SwapDown string `yaml:"swapdown" env-default:"shift+down"`
 		Insert   string `yaml:"insert" env-default:"enter"`
 		Remove   string `yaml:"remove" env-default:"backspace"`
-		Edit     string `yaml:"edit" env-default:"shift+right"`
+		Edit     string `yaml:"edit" env-default:"right"`
 		EditExit string `yaml:"editexit" env-default:"esc"`
+		Help     string `yaml:"help" env-default:"?"`
 	}
 )
 

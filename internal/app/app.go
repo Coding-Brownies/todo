@@ -79,7 +79,8 @@ func (a *App) Run(cmd string, args ...string) error {
 			return err
 		}
 
-		res := bubble.Run(a.cfg, tasks)
+		b := bubble.New(a.cfg)
+		res := b.Run(tasks)
 		return a.repo.Store(res)
 	}
 

@@ -2,12 +2,11 @@ package bubble
 
 import (
 	"fmt"
-	"io"
 	"os"
-	"strings"
 
 	"github.com/Coding-Brownies/todo/config"
 	"github.com/Coding-Brownies/todo/internal/entity"
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
@@ -17,11 +16,12 @@ import (
 const defaultWidth = 20
 
 type model struct {
-	cfg       *config.Config
+	keymap    KeyMap
 	list      list.Model
 	textInput textarea.Model
 	err       error
 	editing   bool
+	bigHelp   bool
 }
 
 func (m model) Init() tea.Cmd {
@@ -29,17 +29,46 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// add a case in which the m.bigHelp field of the model is changed
 	switch msg := msg.(type) {
+
 	case tea.WindowSizeMsg:
 		m.list.SetWidth(msg.Width)
 		return m, nil
 
 	case tea.KeyMsg:
-		switch keypress := msg.String(); keypress {
-		case m.cfg.Quit:
+		switch {
+
+		case key.Matches(msg, m.keymap.Help):
+			if m.editing {
+				break
+			}
+			m.bigHelp = !m.bigHelp
+
+		case key.Matches(msg, m.keymap.Up):
+			if m.editing {
+				break
+			}
+			before := m.list.Index() - 1
+			if before < 0 {
+				before = 0
+			}
+			m.list.Select(before)
+
+		case key.Matches(msg, m.keymap.Down):
+			if m.editing {
+				break
+			}
+			next := m.list.Index() + 1
+			if next > len(m.list.Items())-1 {
+				next = len(m.list.Items()) - 1
+			}
+			m.list.Select(next)
+
+		case key.Matches(msg, m.keymap.Quit):
 			return m, tea.Quit
 
-		case m.cfg.Check:
+		case key.Matches(msg, m.keymap.Check):
 			if m.editing {
 				break
 			}
@@ -48,7 +77,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.list.SetItem(m.list.Index(), i)
 			}
 
-		case m.cfg.SwapUp:
+		case key.Matches(msg, m.keymap.SwapUp):
 			if m.editing {
 				break
 			}
@@ -66,7 +95,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.list.SetItem(m.list.Index(), cur)
 			m.list.SetItem(m.list.Index()+1, above)
 
-		case m.cfg.SwapDown:
+		case key.Matches(msg, m.keymap.SwapDown):
 			if m.editing {
 				break
 			}
@@ -84,7 +113,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.list.SetItem(m.list.Index(), cur)
 			m.list.SetItem(m.list.Index()-1, below)
 
-		case m.cfg.Insert:
+		case key.Matches(msg, m.keymap.Insert):
 			if m.editing {
 				break
 			}
@@ -92,7 +121,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.list.InsertItem(m.list.Index(), entity.Task{})
 			m.list.Select(m.list.Index())
 
-		case "delete", "backspace":
+		case key.Matches(msg, m.keymap.Remove):
 			if m.editing {
 				break
 			}
@@ -103,7 +132,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.list.RemoveItem(m.list.Index())
 			}
 
-		case m.cfg.Edit:
+		case key.Matches(msg, m.keymap.Edit):
 			if m.editing {
 				break
 			}
@@ -114,7 +143,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.textInput.SetValue(cur.Description)
 
-		case m.cfg.EditExit:
+		case key.Matches(msg, m.keymap.EditExit):
 			if !m.editing {
 				break
 			}
@@ -128,7 +157,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				Description: m.textInput.Value(),
 			})
 			m.editing = false
-			return m, m.Init()
 		}
 
 	// We handle errors just like any other message
@@ -144,64 +172,28 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	}
 
-	m.list, cmd = m.list.Update(msg)
-	return m, cmd
+	return m, m.Init()
 }
 
 func (m model) View() string {
 	if m.editing {
 		return fmt.Sprintf(
-			"\n%s\n%s",
+			"\n%s\n\n%s",
 			m.textInput.View(),
-			"(esc to quit)",
+			m.list.Help.ShortHelpView([]key.Binding{m.keymap.EditExit}),
 		) + "\n"
 	}
-	return m.list.View()
+
+	help := m.list.Help.ShortHelpView(m.keymap.ShortHelp())
+	if m.bigHelp {
+		help = m.list.Help.FullHelpView(m.keymap.FullHelp())
+	}
+
+	return m.list.View() +
+		m.list.Styles.HelpStyle.Render(help)
 }
 
-type taskDelegate struct{}
-
-func (d taskDelegate) Height() int                               { return 1 }
-func (d taskDelegate) Spacing() int                              { return 0 }
-func (d taskDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd { return nil }
-func (d taskDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
-	i, ok := listItem.(entity.Task)
-	if !ok {
-		return
-	}
-
-	state := entity.CheckToDo
-	if i.Done {
-		state = entity.CheckDone
-	}
-	str := fmt.Sprintf("%s %s", state, i.Description)
-
-	// remove multiple lines
-	if idx := strings.Index(str, "\n"); idx != -1 {
-		str = str[:idx] + "..."
-	}
-
-	fn := itemStyle.Render
-	if index == m.Index() {
-		fn = func(s ...string) string {
-			return selectedItemStyle.Render("▸ " + strings.Join(s, " "))
-		}
-	}
-
-	fmt.Fprint(w, fn(str))
-}
-
-var (
-	itemStyle         = lipgloss.NewStyle().PaddingLeft(4)
-	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2)
-)
-
-func Run(cfg *config.Config, tasks []entity.Task) []entity.Task {
-
-	items := make([]list.Item, len(tasks))
-	for i, v := range tasks {
-		items[i] = v
-	}
+func New(cfg *config.Config) *model {
 
 	// build the input
 	ta := textarea.New()
@@ -211,25 +203,37 @@ func Run(cfg *config.Config, tasks []entity.Task) []entity.Task {
 	ta.MaxHeight = 30
 
 	l := list.New(
-		items,
-		taskDelegate{},
+		[]list.Item{},
+		customItemRender{},
 		defaultWidth,
 		10,
 	)
 
+	keyMap := NewKeyMap(cfg)
+
 	// build the list
 	l.Title = ""
+	l.SetShowHelp(false)
 	l.SetShowStatusBar(false)
 	l.SetFilteringEnabled(false)
 	l.Styles.Title = lipgloss.NewStyle().Height(0).Margin(0, 0, 0, 0).Padding(0, 0, 0, 0)
 	l.Styles.PaginationStyle = list.DefaultStyles().PaginationStyle.PaddingLeft(5)
-	l.Styles.HelpStyle = list.DefaultStyles().HelpStyle.PaddingLeft(2)
+	l.Styles.HelpStyle = list.DefaultStyles().HelpStyle.PaddingLeft(2).Foreground(lipgloss.Color("#000000"))
 
-	m := model{
+	return &model{
 		list:      l,
 		textInput: ta,
-		cfg:       cfg,
+		keymap:    *keyMap,
 	}
+}
+
+func (m *model) Run(tasks []entity.Task) []entity.Task {
+
+	items := make([]list.Item, len(tasks))
+	for i, v := range tasks {
+		items[i] = v
+	}
+	m.list.SetItems(items)
 
 	pg := tea.NewProgram(m)
 	endmodel, err := pg.Run()
