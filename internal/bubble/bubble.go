@@ -38,7 +38,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		switch {
+
+		case key.Matches(msg, m.keymap.Help):
+			if m.editing {
+				break
+			}
+			m.bigHelp = !m.bigHelp
+
 		case key.Matches(msg, m.keymap.Up):
+			if m.editing {
+				break
+			}
 			before := m.list.Index() - 1
 			if before < 0 {
 				before = 0
@@ -46,6 +56,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.list.Select(before)
 
 		case key.Matches(msg, m.keymap.Down):
+			if m.editing {
+				break
+			}
 			next := m.list.Index() + 1
 			if next > len(m.list.Items())-1 {
 				next = len(m.list.Items()) - 1
