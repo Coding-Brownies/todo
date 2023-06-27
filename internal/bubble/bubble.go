@@ -125,10 +125,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				break
 			}
 			// Store changes synchronously
-			m.repo.Add(&entity.Task{})
+			t := &entity.Task{}
+			m.repo.Add(t)
 
-			m.list.InsertItem(len(m.list.Items())-1, entity.Task{})
-			m.list.Select(len(m.list.Items())-1)
+			index := len(m.list.Items())
+			m.list.InsertItem(index, *t)
+			m.list.Select(index)
 
 		case key.Matches(msg, m.keymap.Remove):
 			if m.editing {

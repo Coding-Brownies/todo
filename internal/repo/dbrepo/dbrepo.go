@@ -55,17 +55,6 @@ func (db *DBRepo) Uncheck(ID string) error {
 	return db.Model(&entity.Task{}).Where("id=?", ID).Update("done", false).Error
 }
 
-func (db *DBRepo) Store(tasks []entity.Task) error {
-	for i := 0; i < len(tasks); i++ {
-		tasks[i].ID = uuid.New().String()
-	}
-	err := db.Where("1=1").Delete(&entity.Task{}).Error
-	if err != nil {
-		return err
-	}
-	return db.Create(tasks).Error
-}
-
 func (db *DBRepo) Edit(ID string, newDescription string) error {
 	return db.Model(&entity.Task{}).Where("id=?", ID).Update("description", newDescription).Error
 }

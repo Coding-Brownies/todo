@@ -64,11 +64,11 @@ func (j *JSONRepo) Add(t *entity.Task) error {
 
 	tasks = append(tasks, *t)
 
-	err = j.Store(tasks)
+	err = j.store(tasks)
 	return err
 }
 
-func (j *JSONRepo) Store(tasks []entity.Task) error {
+func (j *JSONRepo) store(tasks []entity.Task) error {
 	// conversione di tasks in JSON
 	content, err := json.Marshal(tasks)
 	if err != nil {
@@ -111,7 +111,7 @@ func (j *JSONRepo) Delete(id string) error {
 
 	tasks = append(tasks[:index], tasks[index+1:]...)
 
-	err = j.Store(tasks)
+	err = j.store(tasks)
 	return err
 }
 
@@ -123,7 +123,7 @@ func (j *JSONRepo) Check(id string) error {
 
 	tasks[index].Done = true
 
-	err = j.Store(tasks)
+	err = j.store(tasks)
 	return err
 }
 
@@ -135,7 +135,7 @@ func (j *JSONRepo) Uncheck(id string) error {
 
 	tasks[index].Done = false
 
-	err = j.Store(tasks)
+	err = j.store(tasks)
 	return err
 }
 
@@ -147,7 +147,7 @@ func (j *JSONRepo) Edit(id string, newDescription string) error {
 
 	tasks[index].Description = newDescription
 
-	err = j.Store(tasks)
+	err = j.store(tasks)
 	return err
 }
 
