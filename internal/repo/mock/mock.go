@@ -45,3 +45,7 @@ func (m *MockRepo) Edit(id string, newDescription string) error {
 func (*MockRepo) Swap(IDa string, IDb string) error {
 	return nil
 }
+
+func (m *MockRepo) UndoLastChange(id string) error {
+	return nil
+}

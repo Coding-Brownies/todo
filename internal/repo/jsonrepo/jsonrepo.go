@@ -164,3 +164,12 @@ func (j *JSONRepo) Swap(IDa string, IDb string) error {
 	tasksB[indexB].Position = tasksA[indexA].Position
 	return nil
 }
+
+func (j *JSONRepo) UndoLastChange(id string) error {
+	_, tasks, err := j.idAndListCheck(id)
+	if err != nil {
+		return err
+	}
+	err = j.store(tasks)
+	return err
+}

@@ -10,4 +10,5 @@ type Repo interface {
 	Uncheck(ID string) error
 	Edit(ID string, newDescription string) error
 	Swap(IDa, IDb string) error
+	UndoLastChange(ID string) error
 }
