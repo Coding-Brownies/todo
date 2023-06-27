@@ -1,14 +1,14 @@
 package dbrepo
 
 import (
-	"github.com/Coding-Brownies/todo/internal/app"
+	"github.com/Coding-Brownies/todo/internal"
 	"github.com/Coding-Brownies/todo/internal/entity"
 	"github.com/google/uuid"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-var _ app.Repo = &DBRepo{}
+var _ internal.Repo = &DBRepo{}
 
 type DBRepo struct {
 	*gorm.DB

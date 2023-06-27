@@ -7,11 +7,11 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/Coding-Brownies/todo/internal/app"
+	"github.com/Coding-Brownies/todo/internal"
 	"github.com/Coding-Brownies/todo/internal/entity"
 )
 
-var _ app.Repo = &JSONRepo{}
+var _ internal.Repo = &JSONRepo{}
 
 type JSONRepo struct {
 	path string

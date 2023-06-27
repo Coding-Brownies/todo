@@ -1,11 +1,11 @@
 package mock
 
 import (
-	"github.com/Coding-Brownies/todo/internal/app"
+	"github.com/Coding-Brownies/todo/internal"
 	"github.com/Coding-Brownies/todo/internal/entity"
 )
 
-var _ app.Repo = &MockRepo{}
+var _ internal.Repo = &MockRepo{}
 
 type MockRepo struct{}
 

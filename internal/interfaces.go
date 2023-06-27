@@ -1,4 +1,4 @@
-package app
+package internal
 
 import "github.com/Coding-Brownies/todo/internal/entity"
 

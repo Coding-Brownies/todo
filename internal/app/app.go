@@ -6,17 +6,18 @@ import (
 	"strings"
 
 	"github.com/Coding-Brownies/todo/config"
+	"github.com/Coding-Brownies/todo/internal"
 	"github.com/Coding-Brownies/todo/internal/bubble"
 	"github.com/Coding-Brownies/todo/internal/entity"
 )
 
 type App struct {
-	repo Repo
+	repo internal.Repo
 	cfg  *config.Config
 }
 
 // funzione new restituisce un riferimento ad App
-func New(cfg *config.Config, r Repo) *App {
+func New(cfg *config.Config, r internal.Repo) *App {
 
 	return &App{
 		repo: r,
@@ -79,9 +80,9 @@ func (a *App) Run(cmd string, args ...string) error {
 			return err
 		}
 
-		b := bubble.New(a.cfg)
-		res := b.Run(tasks)
-		return a.repo.Store(res)
+		b := bubble.New(a.cfg, a.repo)
+		return b.Run(tasks)
+
 	}
 
 	return errors.New("command not found")
