@@ -57,34 +57,6 @@ func TestCheck(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestStore(t *testing.T) {
-	r, err := dbrepo.New("/tmp/store.db")
-	assert.NoError(t, err)
-
-	tasks := []entity.Task{
-		{
-			Description: "lel",
-			Done:        false,
-		},
-		{
-			Description: "cotechino",
-			Done:        true,
-		},
-	}
-	err = r.Store(tasks)
-	assert.NoError(t, err)
-
-	res, err := r.List()
-	assert.NoError(t, err)
-
-	assert.Len(t, res, 2)
-
-	err = r.Delete(res[0].ID)
-	assert.NoError(t, err)
-	err = r.Delete(res[1].ID)
-	assert.NoError(t, err)
-}
-
 func TestEdit(t *testing.T) {
 	r, err := dbrepo.New("/tmp/store.db")
 	assert.NoError(t, err)

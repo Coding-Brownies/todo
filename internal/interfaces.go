@@ -1,4 +1,4 @@
-package app
+package internal
 
 import "github.com/Coding-Brownies/todo/internal/entity"
 
@@ -9,6 +9,5 @@ type Repo interface {
 	Check(ID string) error
 	Uncheck(ID string) error
 	Edit(ID string, newDescription string) error
-	Store([]entity.Task) error
 	Swap(IDa, IDb string) error
 }

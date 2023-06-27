@@ -2,9 +2,9 @@ package bubble
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/Coding-Brownies/todo/config"
+	"github.com/Coding-Brownies/todo/internal"
 	"github.com/Coding-Brownies/todo/internal/entity"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
@@ -22,6 +22,7 @@ type model struct {
 	err       error
 	editing   bool
 	bigHelp   bool
+	repo      internal.Repo
 }
 
 func (m model) Init() tea.Cmd {
@@ -29,7 +30,6 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	// add a case in which the m.bigHelp field of the model is changed
 	switch msg := msg.(type) {
 
 	case tea.WindowSizeMsg:
@@ -38,7 +38,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		switch {
-
+		// case in which the m.bigHelp field of the model is changed
 		case key.Matches(msg, m.keymap.Help):
 			if m.editing {
 				break
@@ -73,6 +73,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				break
 			}
 			if i, ok := m.list.SelectedItem().(entity.Task); ok {
+				//Store changes synchronously
+				m.repo.Check(i.ID)
+
 				i.Done = !i.Done
 				m.list.SetItem(m.list.Index(), i)
 			}
@@ -91,6 +94,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.list.Select(m.list.Index() + 1)
 				break
 			}
+			// Store changes synchronously
+			m.repo.Swap(cur.ID, above.ID)
 
 			m.list.SetItem(m.list.Index(), cur)
 			m.list.SetItem(m.list.Index()+1, above)
@@ -109,6 +114,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.list.Select(m.list.Index() - 1)
 				break
 			}
+			// Store changes synchronously
+			m.repo.Swap(cur.ID, below.ID)
 
 			m.list.SetItem(m.list.Index(), cur)
 			m.list.SetItem(m.list.Index()-1, below)
@@ -117,14 +124,23 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.editing {
 				break
 			}
+			// Store changes synchronously
+			t := &entity.Task{}
+			m.repo.Add(t)
 
-			m.list.InsertItem(m.list.Index(), entity.Task{})
-			m.list.Select(m.list.Index())
+			index := len(m.list.Items())
+			m.list.InsertItem(index, *t)
+			m.list.Select(index)
 
 		case key.Matches(msg, m.keymap.Remove):
 			if m.editing {
 				break
 			}
+			// Store changes synchronously
+			if i, ok := m.list.SelectedItem().(entity.Task); ok {
+				m.repo.Delete(i.ID)
+			}
+
 			if m.list.Index() == len(m.list.Items())-1 && len(m.list.Items()) > 1 {
 				m.list.RemoveItem(m.list.Index())
 				m.list.Select(m.list.Index() - 1)
@@ -151,6 +167,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if !ok {
 				break
 			}
+			// Store changes synchronously
+			m.repo.Edit(cur.ID, m.textInput.Value())
 
 			m.list.SetItem(m.list.Index(), entity.Task{
 				Done:        cur.Done,
@@ -193,7 +211,7 @@ func (m model) View() string {
 		m.list.Styles.HelpStyle.Render(help)
 }
 
-func New(cfg *config.Config) *model {
+func New(cfg *config.Config, repo internal.Repo) *model {
 
 	// build the input
 	ta := textarea.New()
@@ -221,13 +239,14 @@ func New(cfg *config.Config) *model {
 	l.Styles.HelpStyle = list.DefaultStyles().HelpStyle.PaddingLeft(2).Foreground(lipgloss.Color("#000000"))
 
 	return &model{
+		repo:      repo,
 		list:      l,
 		textInput: ta,
 		keymap:    *keyMap,
 	}
 }
 
-func (m *model) Run(tasks []entity.Task) []entity.Task {
+func (m *model) Run(tasks []entity.Task) error {
 
 	items := make([]list.Item, len(tasks))
 	for i, v := range tasks {
@@ -236,15 +255,9 @@ func (m *model) Run(tasks []entity.Task) []entity.Task {
 	m.list.SetItems(items)
 
 	pg := tea.NewProgram(m)
-	endmodel, err := pg.Run()
+	_, err := pg.Run()
 	if err != nil {
-		fmt.Println("Error running program:", err)
-		os.Exit(1)
+		return err
 	}
-
-	var res []entity.Task
-	for _, item := range endmodel.(model).list.Items() {
-		res = append(res, item.(entity.Task))
-	}
-	return res
+	return nil
 }

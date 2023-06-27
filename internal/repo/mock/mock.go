@@ -1,11 +1,11 @@
 package mock
 
 import (
-	"github.com/Coding-Brownies/todo/internal/app"
+	"github.com/Coding-Brownies/todo/internal"
 	"github.com/Coding-Brownies/todo/internal/entity"
 )
 
-var _ app.Repo = &MockRepo{}
+var _ internal.Repo = &MockRepo{}
 
 type MockRepo struct{}
 
@@ -38,10 +38,6 @@ func (m *MockRepo) Uncheck(id string) error {
 }
 
 func (m *MockRepo) Edit(id string, newDescription string) error {
-	return nil
-}
-
-func (m *MockRepo) Store([]entity.Task) error {
 	return nil
 }
 
