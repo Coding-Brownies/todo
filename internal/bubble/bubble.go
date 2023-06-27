@@ -173,6 +173,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.list.SetItem(m.list.Index(), entity.Task{
 				Done:        cur.Done,
 				Description: m.textInput.Value(),
+				ID:          cur.ID,
 			})
 			m.editing = false
 		}
