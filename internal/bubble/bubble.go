@@ -182,12 +182,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				break
 			}
 
-			if i, ok := m.list.SelectedItem().(entity.Task); ok {
-				//Store changes synchronously
-				m.repo.UndoLastChange(i.ID)
-
-			}
-		
 		}
 
 	// We handle errors just like any other message
