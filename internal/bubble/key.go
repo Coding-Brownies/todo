@@ -22,7 +22,7 @@ type KeyMap struct {
 	Up       key.Binding
 	Down     key.Binding
 	Help     key.Binding
-	Undo	 key.Binding
+	Undo     key.Binding
 }
 
 // FullHelp implements help.KeyMap.

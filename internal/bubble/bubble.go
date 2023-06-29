@@ -181,7 +181,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.editing {
 				break
 			}
-
+			m.repo.Undo()
+			tasks, _ := m.repo.List()
+			items := make([]list.Item, len(tasks))
+			for i, v := range tasks {
+				items[i] = v
+			}
+			m.list.SetItems(items)
 		}
 
 	// We handle errors just like any other message

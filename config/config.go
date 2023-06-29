@@ -22,7 +22,7 @@ type (
 		Edit     string `yaml:"edit" env-default:"right"`
 		EditExit string `yaml:"editexit" env-default:"esc"`
 		Help     string `yaml:"help" env-default:"?"`
-		Undo 	 string `yaml:"undo" env-default:"ctrl+z"`	
+		Undo     string `yaml:"undo" env-default:"ctrl+z"`
 	}
 )
 

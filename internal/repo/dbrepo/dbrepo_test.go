@@ -122,3 +122,49 @@ func TestSwap(t *testing.T) {
 	err = r.Delete(res[1].ID)
 	assert.NoError(t, err)
 }
+
+func TestUndo(t *testing.T) {
+	r, err := dbrepo.New("/tmp/store.db")
+	assert.NoError(t, err)
+	// creo un task
+	task := &entity.Task{
+		ID:          "id",
+		Description: "spesa",
+		Done:        false,
+	}
+	err = r.Add(task)
+	assert.NoError(t, err)
+
+	res, err := r.List()
+	assert.NoError(t, err)
+	// effettuo una modifica sul campo done
+	err = r.Check(res[0].ID)
+	assert.NoError(t, err)
+	// effettuo il ctrl+z
+	err = r.Undo()
+	assert.NoError(t, err)
+	// stampa della lista aggiornata dei task
+	res, err = r.List()
+	assert.NoError(t, err)
+	// il task deve essere come prima dell'ultima modifica
+	assert.Equal(t, false, res[0].Done)
+	assert.Equal(t, "spesa", res[0].Description)
+	//
+	//
+	//
+	// effettuo una modifica sul campo description
+	err = r.Edit(res[0].ID, "pausa")
+	assert.NoError(t, err)
+	// effettuo il ctrl+z
+	err = r.Undo()
+	assert.NoError(t, err)
+	// stampa della lista aggiornata dei task
+	res, err = r.List()
+	assert.NoError(t, err)
+	// il task deve essere come prima dell'ultima modifica
+	assert.Equal(t, true, res[0].Done)
+	assert.Equal(t, "spesa", res[0].Description)
+
+	err = r.Delete(res[0].ID)
+	assert.NoError(t, err)
+}
