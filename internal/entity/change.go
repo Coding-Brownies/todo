@@ -11,7 +11,5 @@ type Change struct {
 	Description string
 	Position    time.Time
 
-	Reverted bool
-	//RevertedByID uint
-	//RevertedAt   time.Time
+	ActionID string // id dell'operazione, necessario per le operazioni che richiedono 2 id (swap)
 }

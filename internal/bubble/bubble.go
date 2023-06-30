@@ -95,7 +95,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				break
 			}
 			// Store changes synchronously
-			m.repo.Swap(cur.ID, above.ID)
+			m.repo.Swap(cur, above)
 
 			m.list.SetItem(m.list.Index(), cur)
 			m.list.SetItem(m.list.Index()+1, above)
@@ -115,7 +115,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				break
 			}
 			// Store changes synchronously
-			m.repo.Swap(cur.ID, below.ID)
+			m.repo.Swap(cur, below)
 
 			m.list.SetItem(m.list.Index(), cur)
 			m.list.SetItem(m.list.Index()-1, below)
@@ -188,6 +188,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				items[i] = v
 			}
 			m.list.SetItems(items)
+			if m.list.Index() > len(items)-1 {
+				m.list.Select(len(items) - 1)
+			}
 		}
 
 	// We handle errors just like any other message

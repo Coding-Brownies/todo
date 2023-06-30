@@ -108,7 +108,7 @@ func TestSwap(t *testing.T) {
 	res, err := r.List()
 	assert.NoError(t, err)
 
-	err = r.Swap(res[0].ID, res[1].ID)
+	err = r.Swap(res[0], res[1])
 	assert.NoError(t, err)
 
 	res, err = r.List()

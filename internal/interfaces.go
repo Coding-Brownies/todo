@@ -9,6 +9,7 @@ type Repo interface {
 	Check(ID string) error
 	Uncheck(ID string) error
 	Edit(ID string, newDescription string) error
-	Swap(IDa, IDb string) error
+	//TODO la swap prende in input 2 task
+	Swap(taskA entity.Task, taskB entity.Task) error
 	Undo() error
 }

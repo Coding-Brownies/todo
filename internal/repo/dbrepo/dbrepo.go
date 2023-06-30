@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 var _ internal.Repo = &DBRepo{}
@@ -17,7 +18,10 @@ type DBRepo struct {
 }
 
 func New(dbpath string) (*DBRepo, error) {
-	db, err := gorm.Open(sqlite.Open(dbpath), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(dbpath), &gorm.Config{
+		//TODO: silent only record not found
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -117,51 +121,65 @@ func (db *DBRepo) Edit(ID string, newDescription string) error {
 	if err != nil {
 		return err
 	}
-	// Registra l'azione di modifica nella tabella di registro delle modifiche
-
+	// Una volta che la modifica è andata a buon fine, registra l'azione di modifica nella tabella di registro delle modifiche
 	return db.Create(&change).Error
 }
 
-func (db *DBRepo) Swap(IDa string, IDb string) error {
-	var a, b entity.Task
-
-	err := db.Select("position").Take(&a, "id=?", IDa).Error
+// TODO la swap prende in input 2 task
+func (db *DBRepo) Swap(taskA entity.Task, taskB entity.Task) error {
+	// creazione delle due change, con il valore attuale del campo position (prima di effettuare la swap)
+	actionID := uuid.New().String()
+	change := []entity.Change{
+		{
+			TaskID:   taskA.ID,
+			Action:   "Swap",
+			ActionID: actionID,
+			Position: taskA.Position,
+		},
+		{
+			TaskID:   taskB.ID,
+			Action:   "Swap",
+			ActionID: actionID,
+			Position: taskB.Position,
+		},
+	}
+	// effettuo la swap
+	err := db.Model(&entity.Task{}).Where("id=?", taskA.ID).Update("position", taskB.Position).Error
 	if err != nil {
 		return err
 	}
-	err = db.Select("position").Take(&b, "id=?", IDb).Error
+	err = db.Model(&entity.Task{}).Where("id=?", taskB.ID).Update("position", taskA.Position).Error
 	if err != nil {
 		return err
 	}
-
-	err = db.Model(&entity.Task{}).Where("id=?", IDa).Update("position", b.Position).Error
+	// Registra le due change nella tabella di registro delle modifiche
+	err = db.Create(&change[0]).Error
 	if err != nil {
 		return err
 	}
-	err = db.Model(&entity.Task{}).Where("id=?", IDb).Update("position", a.Position).Error
+	err = db.Create(&change[1]).Error
 	if err != nil {
 		return err
 	}
 	return nil
-	// Registra l'azione di swap nella tabella di registro delle modifiche
 }
 
 func (db *DBRepo) Undo() error {
 	var change entity.Change
-	// Trova l'ultima modifica registrata non ancora revertita
-	err := db.Where("reverted = ?", false).Order("id desc").First(&change).Error
+	// Trova l'ultima modifica registrata
+	err := db.Order("id desc").First(&change).Error
 	if err != nil {
 		return err
 	}
-	// Aggiorna il flag di revert nella tabella di registro delle modifiche
-	err = db.Model(&entity.Change{}).Where("id = ?", change.ID).Update("reverted", true).Error
+	// e la elimina la change
+	err = db.Where("id = ?", change.ID).Delete(&entity.Change{}).Error
 	if err != nil {
 		return err
 	}
 	// Effettua il revert dell'azione
 	switch change.Action {
 	case "Add":
-		return db.Delete(change.TaskID)
+		return db.DB.Where("id=?", change.TaskID).Delete(&entity.Task{}).Error
 	case "Delete":
 		// Ripristina il task eliminato
 		task := entity.Task{
@@ -169,15 +187,36 @@ func (db *DBRepo) Undo() error {
 			Description: change.Description,
 			Position:    change.Position,
 		}
-		return db.Create(&task).Error
+		return db.DB.Create(&task).Error
 	case "Check":
 		return db.Model(&entity.Task{}).Where("id = ?", change.TaskID).Update("done", false).Error
 	case "Uncheck":
 		return db.Model(&entity.Task{}).Where("id = ?", change.TaskID).Update("done", true).Error
 	case "Edit":
 		return db.Model(&entity.Task{}).Where("id = ?", change.TaskID).Update("description", change.Description).Error
-	//case "Swap":
-	//return db.Swap()
+	case "Swap":
+		// prelevare il secondo change legato all'action id del primo change
+		var changeB entity.Change
+		err := db.Where("action_id=?", change.ActionID).First(&changeB).Error //first , ma a regola funziona anche con find
+		if err != nil {
+			return err
+		}
+		// swap in query
+		err = db.Model(&entity.Task{}).Where("id = ?", change.TaskID).Update("position", change.Position).Error
+		if err != nil {
+			return err
+		}
+		err = db.Model(&entity.Task{}).Where("id = ?", changeB.TaskID).Update("position", changeB.Position).Error
+		if err != nil {
+			return err
+		}
+		// cancello il secondo change
+		err = db.Where("id = ?", changeB.ID).Delete(&entity.Change{}).Error
+		if err != nil {
+			return err
+		}
+		return nil
+
 	default:
 		return fmt.Errorf("azione non supportata: %s", change.Action)
 	}
