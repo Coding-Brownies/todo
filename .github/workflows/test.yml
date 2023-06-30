@@ -17,5 +17,4 @@ jobs:
 
     - name: Build and test
       run: |
-        go get .
         go test ./... -parallel 4
