@@ -125,8 +125,7 @@ func (db *DBRepo) Edit(ID string, newDescription string) error {
 	return db.Create(&change).Error
 }
 
-// TODO la swap prende in input 2 task
-func (db *DBRepo) Swap(taskA entity.Task, taskB entity.Task) error {
+func (db *DBRepo) Swap(taskA, taskB *entity.Task) error {
 	// creazione delle due change, con il valore attuale del campo position (prima di effettuare la swap)
 	actionID := uuid.New().String()
 	change := []entity.Change{
