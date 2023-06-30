@@ -9,6 +9,7 @@ import (
 )
 
 func TestList(t *testing.T) {
+	t.Parallel()
 	r, err := dbrepo.New(":memory:")
 	assert.NoError(t, err)
 
@@ -24,12 +25,10 @@ func TestList(t *testing.T) {
 	assert.Len(t, res, 1)
 	assert.Equal(t, res[0].Description, "lel")
 	assert.Equal(t, res[0].Done, true)
-
-	err = r.Delete(res[0].ID)
-	assert.NoError(t, err)
 }
 
 func TestCheck(t *testing.T) {
+	t.Parallel()
 	r, err := dbrepo.New(":memory:")
 	assert.NoError(t, err)
 
@@ -52,12 +51,10 @@ func TestCheck(t *testing.T) {
 
 	assert.Len(t, res, 1)
 	assert.Equal(t, true, res[0].Done)
-
-	err = r.Delete(res[0].ID)
-	assert.NoError(t, err)
 }
 
 func TestEdit(t *testing.T) {
+	t.Parallel()
 	r, err := dbrepo.New(":memory:")
 	assert.NoError(t, err)
 
@@ -79,12 +76,10 @@ func TestEdit(t *testing.T) {
 
 	assert.Len(t, res, 1)
 	assert.Equal(t, "ghes", res[0].Description)
-
-	err = r.Delete(res[0].ID)
-	assert.NoError(t, err)
 }
 
 func TestSwap(t *testing.T) {
+	t.Parallel()
 	r, err := dbrepo.New(":memory:")
 	assert.NoError(t, err)
 
@@ -118,14 +113,10 @@ func TestSwap(t *testing.T) {
 	assert.Equal(t, res[0].Done, true)
 	assert.Equal(t, res[1].Description, "calamaroA")
 	assert.Equal(t, res[1].Done, false)
-
-	err = r.Delete(res[0].ID)
-	assert.NoError(t, err)
-	err = r.Delete(res[1].ID)
-	assert.NoError(t, err)
 }
 
 func TestUndo(t *testing.T) {
+	t.Parallel()
 	r, err := dbrepo.New(":memory:")
 	assert.NoError(t, err)
 	tasks := []entity.Task{
@@ -181,9 +172,4 @@ func TestUndo(t *testing.T) {
 	// il task deve essere come prima dell'ultima modifica
 	assert.Equal(t, "Ale", res[0].Description)
 	assert.Equal(t, "Burberone", res[1].Description)
-
-	err = r.Delete(res[0].ID)
-	assert.NoError(t, err)
-	err = r.Delete(res[1].ID)
-	assert.NoError(t, err)
 }
