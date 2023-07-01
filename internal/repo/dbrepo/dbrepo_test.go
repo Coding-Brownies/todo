@@ -43,7 +43,7 @@ func TestCheck(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, res, 1)
 
-	err = r.Check(res[0].ID)
+	err = r.Check(&res[0])
 	assert.NoError(t, err)
 
 	res, err = r.List()
@@ -68,7 +68,7 @@ func TestEdit(t *testing.T) {
 	res, err := r.List()
 	assert.NoError(t, err)
 
-	err = r.Edit(res[0].ID, "ghes")
+	err = r.Edit(&res[0], "ghes")
 	assert.NoError(t, err)
 
 	res, err = r.List()
@@ -136,7 +136,7 @@ func TestUndo(t *testing.T) {
 	res, err := r.List()
 	assert.NoError(t, err)
 	// effettuo una modifica: idA true
-	err = r.Check(res[0].ID)
+	err = r.Check(&res[0])
 	assert.NoError(t, err)
 	// stampa della lista aggiornata dei task
 	res, err = r.List()

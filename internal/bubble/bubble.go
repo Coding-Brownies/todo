@@ -74,7 +74,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if i, ok := m.list.SelectedItem().(entity.Task); ok {
 				//Store changes synchronously
-				m.repo.Check(i.ID)
+				m.repo.Check(&i)
 
 				i.Done = !i.Done
 				m.list.SetItem(m.list.Index(), i)
@@ -138,7 +138,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			// Store changes synchronously
 			if i, ok := m.list.SelectedItem().(entity.Task); ok {
-				m.repo.Delete(i.ID)
+				m.repo.Delete(&i)
 			}
 
 			if m.list.Index() == len(m.list.Items())-1 && len(m.list.Items()) > 1 {
@@ -168,7 +168,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				break
 			}
 			// Store changes synchronously
-			m.repo.Edit(cur.ID, m.textInput.Value())
+			m.repo.Edit(&cur, m.textInput.Value())
 
 			m.list.SetItem(m.list.Index(), entity.Task{
 				Done:        cur.Done,

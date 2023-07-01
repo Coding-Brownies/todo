@@ -46,7 +46,7 @@ func (db *DBRepo) Add(t *entity.Task) error {
 	if err != nil {
 		return err
 	}
-	// Registra l'azione di aggiunta nella tabella di registro delle modifiche
+	// Crea e registra l'azione di aggiunta nella tabella di registro delle modifiche
 	change := entity.Change{
 		TaskID:      t.ID,
 		Action:      "Add",
@@ -56,68 +56,58 @@ func (db *DBRepo) Add(t *entity.Task) error {
 	return db.Create(&change).Error
 }
 
-func (db *DBRepo) Delete(ID string) error {
-	// Recupera il task prima di eliminarlo
-	var task entity.Task
-	err := db.First(&task, "id = ?", ID).Error
-	if err != nil {
-		return err
+func (db *DBRepo) Delete(t *entity.Task) error {
+	// crea l'azione di eliminazione
+	change := entity.Change{
+		TaskID:      t.ID,
+		Action:      "Delete",
+		Description: t.Description,
+		Position:    t.Position,
 	}
 	// elimina il task
-	err = db.Where("id=?", ID).Delete(&entity.Task{}).Error
+	err := db.Where("id=?", t.ID).Delete(&entity.Task{}).Error
 	if err != nil {
 		return err
 	}
-	// Registra l'azione di eliminazione nella tabella di registro delle modifiche
-	change := entity.Change{
-		TaskID:      ID,
-		Action:      "Delete",
-		Description: task.Description,
-		Position:    task.Position,
-	}
+	// registra la change nella tabella di registro delle modifiche
 	return db.Create(&change).Error
-
 }
 
-func (db *DBRepo) Check(ID string) error {
-	err := db.Model(&entity.Task{}).Where("id = ?", ID).Update("done", true).Error
+func (db *DBRepo) Check(t *entity.Task) error {
+	err := db.Model(&entity.Task{}).Where("id = ?", t.ID).Update("done", true).Error
 	if err != nil {
 		return err
 	}
 	// Registra l'azione di check nella tabella di registro delle modifiche
 	change := entity.Change{
-		TaskID: ID,
+		TaskID: t.ID,
 		Action: "Check",
 	}
 	return db.Create(&change).Error
 }
 
-func (db *DBRepo) Uncheck(ID string) error {
-	err := db.Model(&entity.Task{}).Where("id = ?", ID).Update("done", false).Error
+func (db *DBRepo) Uncheck(t *entity.Task) error {
+	err := db.Model(&entity.Task{}).Where("id = ?", t.ID).Update("done", false).Error
 	if err != nil {
 		return err
 	}
 	// Registra l'azione di uncheck nella tabella di registro delle modifiche
 	change := entity.Change{
-		TaskID: ID,
+		TaskID: t.ID,
 		Action: "Uncheck",
 	}
 	return db.Create(&change).Error
 }
 
-func (db *DBRepo) Edit(ID string, newDescription string) error {
-	old := &entity.Task{}
-	err := db.Where("id = ?", ID).First(old).Error
-	if err != nil {
-		return err
-	}
+func (db *DBRepo) Edit(t *entity.Task, newDescription string) error {
+	// creazione della change con la old description (prima della edit)
 	change := entity.Change{
-		TaskID:      ID,
+		TaskID:      t.ID,
 		Action:      "Edit",
-		Description: old.Description,
+		Description: t.Description,
 	}
-
-	err = db.Model(&entity.Task{}).Where("id = ?", ID).Update("description", newDescription).Error
+	// edit del campo description
+	err := db.Model(&entity.Task{}).Where("id = ?", t.ID).Update("description", newDescription).Error
 	if err != nil {
 		return err
 	}
@@ -160,6 +150,12 @@ func (db *DBRepo) Swap(taskA, taskB *entity.Task) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+// funzione ausiliaria Do che accetta un task,
+// ne esegue il marshalling e lo salva nelle tabella di registro delle modifiche Change
+func (db *DBRepo) Do(t *entity.Task) error{
 	return nil
 }
 
