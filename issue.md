@@ -11,14 +11,15 @@ Un approccio consiste ancora nel memorizzare l'operazione, mentre:
 
 Ogni azione di modifica sui task (Edit, Check, Uncheck, Swap, Delete e Create) può essere ricondotta ad un'operazione di Update, Delete o Create:
 
-Edit -> Update
+
+Add -> Create
+
+Delete -> Delete
 
 Check -> Update
 
 Uncheck -> Update
 
+Edit -> Update
+
 Swap -> Update
-
-Delete -> Delete
-
-Create -> Create
