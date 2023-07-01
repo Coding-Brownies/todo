@@ -73,8 +73,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				break
 			}
 			if i, ok := m.list.SelectedItem().(entity.Task); ok {
-				//Store changes synchronously
-				m.repo.Check(&i)
+				if i.Done {
+					m.repo.Uncheck(&i)
+				} else {
+					m.repo.Check(&i)
+				}
 
 				i.Done = !i.Done
 				m.list.SetItem(m.list.Index(), i)
