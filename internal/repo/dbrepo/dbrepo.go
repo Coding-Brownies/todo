@@ -48,12 +48,14 @@ func (db *DBRepo) Add(t *entity.Task) error {
 		return err
 	}
 	// Crea e registra l'azione add nella tabella di registro delle modifiche Change
-	return db.do(t, "Create")
+	actionID := uuid.New().String()
+	return db.do(t, "Create", actionID)
 }
 
 func (db *DBRepo) Delete(t *entity.Task) error {
 	// Crea e registra l'azione delete nella tabella di registro delle modifiche Change
-	err := db.do(t, "Delete")
+	actionID := uuid.New().String()
+	err := db.do(t, "Delete", actionID)
 	if err != nil {
 		return err
 	}
@@ -63,7 +65,8 @@ func (db *DBRepo) Delete(t *entity.Task) error {
 
 func (db *DBRepo) Check(t *entity.Task) error {
 	// Crea e registra l'azione check nella tabella di registro delle modifiche Change
-	err := db.do(t, "Update")
+	actionID := uuid.New().String()
+	err := db.do(t, "Update", actionID)
 	if err != nil {
 		return err
 	}
@@ -72,7 +75,8 @@ func (db *DBRepo) Check(t *entity.Task) error {
 
 func (db *DBRepo) Uncheck(t *entity.Task) error {
 	// Crea e registra l'azione uncheck nella tabella di registro delle modifiche Change
-	err := db.do(t, "Update")
+	actionID := uuid.New().String()
+	err := db.do(t, "Update", actionID)
 	if err != nil {
 		return err
 	}
@@ -81,7 +85,8 @@ func (db *DBRepo) Uncheck(t *entity.Task) error {
 
 func (db *DBRepo) Edit(t *entity.Task, newDescription string) error {
 	// Crea e registra l'azione edit nella tabella di registro delle modifiche Change
-	err := db.do(t, "Update")
+	actionID := uuid.New().String()
+	err := db.do(t, "Update", actionID)
 	if err != nil {
 		return err
 	}
@@ -90,11 +95,12 @@ func (db *DBRepo) Edit(t *entity.Task, newDescription string) error {
 }
 
 func (db *DBRepo) Swap(taskA, taskB *entity.Task) error {
-	err := db.do(taskA, "Update")
+	actionID := uuid.New().String()
+	err := db.do(taskA, "Update", actionID)
 	if err != nil {
 		return err
 	}
-	err = db.do(taskB, "Update")
+	err = db.do(taskB, "Update", actionID)
 	if err != nil {
 		return err
 	}
@@ -112,13 +118,12 @@ func (db *DBRepo) Swap(taskA, taskB *entity.Task) error {
 
 // funzione ausiliaria Do che accetta un task,
 // ne esegue il marshalling e lo salva nelle tabella di registro delle modifiche Change
-func (db *DBRepo) do(task *entity.Task, action string) error {
+func (db *DBRepo) do(task *entity.Task, action, actionID string) error {
 	// codifica del json come []byte usando Marshal
 	oldStatusJSON, err := json.Marshal(task)
 	if err != nil {
 		return err
 	}
-	actionID := uuid.New().String()
 	// crea una nuova change
 	change := entity.Change{
 		Action:    action,
@@ -131,8 +136,8 @@ func (db *DBRepo) do(task *entity.Task, action string) error {
 
 func (db *DBRepo) Undo() error {
 	// prelevare l'ultimo action id e fare la query per recuperare l'elenco di change con quell'actionID
-	var c entity.Change
 	// Trova l'ultima change registrata
+	var c entity.Change
 	err := db.Order("id desc").First(&c).Error
 	if err != nil {
 		return err
@@ -143,7 +148,6 @@ func (db *DBRepo) Undo() error {
 	if err != nil {
 		return err
 	}
-
 	// per accedere alle informazioni del task nel campo OldStatus, decodificare i byte JSON utilizzando json.Unmarshal()
 	var oldStatus entity.Task
 	err = json.Unmarshal(change[0].OldStatus, &oldStatus)
@@ -159,7 +163,6 @@ func (db *DBRepo) Undo() error {
 	}
 	// Effettua il revert dell'azione
 	switch change[0].Action {
-
 	case "Create":
 		return db.DB.Where("id=?", oldStatus.ID).Delete(&entity.Task{}).Error
 	case "Delete":
@@ -186,14 +189,14 @@ func (db *DBRepo) Undo() error {
 			if err != nil {
 				return err
 			}
-			// casi check, uncheck, edit
-			return db.Model(&entity.Task{}).Where("id = ?", oldStatus.ID).
-				Update("done", oldStatus.Done).
-				Update("description", oldStatus.Description).
-				Update("position", oldStatus.Position).Error
 		}
+		// casi check, uncheck, edit
+		return db.Model(&entity.Task{}).Where("id = ?", oldStatus.ID).
+			Update("done", oldStatus.Done).
+			Update("description", oldStatus.Description).
+			Update("position", oldStatus.Position).Error
+
 	default:
 		return fmt.Errorf("azione non supportata: %s", change[0].Action)
 	}
-	return nil
 }
