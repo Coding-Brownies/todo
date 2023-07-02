@@ -11,5 +11,4 @@ type Repo interface {
 	Edit(t *entity.Task, newDescription string) error
 	Swap(taskA, taskB *entity.Task) error
 	Undo() error
-	Do(t *entity.Task) error
 }

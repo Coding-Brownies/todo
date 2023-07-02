@@ -48,12 +48,12 @@ func (db *DBRepo) Add(t *entity.Task) error {
 		return err
 	}
 	// Crea e registra l'azione add nella tabella di registro delle modifiche Change
-	return db.Do(t, "Create")
+	return db.do(t, "Create")
 }
 
 func (db *DBRepo) Delete(t *entity.Task) error {
 	// Crea e registra l'azione delete nella tabella di registro delle modifiche Change
-	err := db.Do(t, "Delete")
+	err := db.do(t, "Delete")
 	if err != nil {
 		return err
 	}
@@ -63,7 +63,7 @@ func (db *DBRepo) Delete(t *entity.Task) error {
 
 func (db *DBRepo) Check(t *entity.Task) error {
 	// Crea e registra l'azione check nella tabella di registro delle modifiche Change
-	err := db.Do(t, "Update")
+	err := db.do(t, "Update")
 	if err != nil {
 		return err
 	}
@@ -72,7 +72,7 @@ func (db *DBRepo) Check(t *entity.Task) error {
 
 func (db *DBRepo) Uncheck(t *entity.Task) error {
 	// Crea e registra l'azione uncheck nella tabella di registro delle modifiche Change
-	err := db.Do(t, "Update")
+	err := db.do(t, "Update")
 	if err != nil {
 		return err
 	}
@@ -81,7 +81,7 @@ func (db *DBRepo) Uncheck(t *entity.Task) error {
 
 func (db *DBRepo) Edit(t *entity.Task, newDescription string) error {
 	// Crea e registra l'azione edit nella tabella di registro delle modifiche Change
-	err := db.Do(t, "Update")
+	err := db.do(t, "Update")
 	if err != nil {
 		return err
 	}
@@ -90,11 +90,11 @@ func (db *DBRepo) Edit(t *entity.Task, newDescription string) error {
 }
 
 func (db *DBRepo) Swap(taskA, taskB *entity.Task) error {
-	err := db.Do(taskA, "Update")
+	err := db.do(taskA, "Update")
 	if err != nil {
 		return err
 	}
-	err = db.Do(taskB, "Update")
+	err = db.do(taskB, "Update")
 	if err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ func (db *DBRepo) Swap(taskA, taskB *entity.Task) error {
 
 // funzione ausiliaria Do che accetta un task,
 // ne esegue il marshalling e lo salva nelle tabella di registro delle modifiche Change
-func (db *DBRepo) Do(task *entity.Task, action string) error {
+func (db *DBRepo) do(task *entity.Task, action string) error {
 	// codifica del json come []byte usando Marshal
 	oldStatusJSON, err := json.Marshal(task)
 	if err != nil {
@@ -132,68 +132,68 @@ func (db *DBRepo) Do(task *entity.Task, action string) error {
 func (db *DBRepo) Undo() error {
 	// prelevare l'ultimo action id e fare la query per recuperare l'elenco di change con quell'actionID
 	var c entity.Change
-	// Trova l'ultima modifica registrata
+	// Trova l'ultima change registrata
 	err := db.Order("id desc").First(&c).Error
 	if err != nil {
 		return err
 	}
+	// recupera la o le change aventi quell'actionID
 	var change []entity.Change
 	err = db.Where("action_id=?", c.ActionID).Find(&change).Error
 	if err != nil {
 		return err
 	}
-	if len(change) != 1 || len(change) != 2 {
-		fmt.Errorf("numero di change collegati all'azione non supportato: %s", len(change))
+
+	// per accedere alle informazioni del task nel campo OldStatus, decodificare i byte JSON utilizzando json.Unmarshal()
+	var oldStatus entity.Task
+	err = json.Unmarshal(change[0].OldStatus, &oldStatus)
+	if err != nil {
+		return err
 	}
-	// elimina le change correlate a quell'azione
+	//fmt.Errorf("numero di change collegati all'azione non supportato: %s", len(change))
+
+	// elimina le change correlate a quell'actionID, dato che ne viene effettuato il revert
 	err = db.Where("action_id = ?", c.ActionID).Delete(&entity.Change{}).Error
 	if err != nil {
 		return err
 	}
 	// Effettua il revert dell'azione
 	switch change[0].Action {
+
 	case "Create":
-		return db.DB.Where("id=?", change[0].TaskID).Delete(&entity.Task{}).Error
+		return db.DB.Where("id=?", oldStatus.ID).Delete(&entity.Task{}).Error
 	case "Delete":
 		// Ripristina il task eliminato
 		task := entity.Task{
-			ID:          change[0].TaskID,
-			Description: change[0].Description,
-			Position:    change[0].Position,
+			ID:          oldStatus.ID,
+			Done:        oldStatus.Done,
+			Description: oldStatus.Description,
+			Position:    oldStatus.Position,
 		}
 		return db.DB.Create(&task).Error
 	case "Update":
 		// avrà lunghezza 2 solo nel caso dello swap, trattare come 2 Update
 		if len(change) == 2 {
-
+			var oldStatusB entity.Task
+			err = json.Unmarshal(change[1].OldStatus, &oldStatusB)
+			if err != nil {
+				return err
+			}
+			err = db.Model(&entity.Task{}).Where("id = ?", oldStatusB.ID).
+				Update("done", oldStatusB.Done).
+				Update("description", oldStatusB.Description).
+				Update("position", oldStatusB.Position).Error
+			if err != nil {
+				return err
+			}
+			// casi check, uncheck, edit
+			return db.Model(&entity.Task{}).Where("id = ?", oldStatus.ID).
+				Update("done", oldStatus.Done).
+				Update("description", oldStatus.Description).
+				Update("position", oldStatus.Position).Error
 		}
-		// altri casi di update (check, uncheck, edit)
-		return db.Model(&entity.Task{}).Where("id = ?", change.TaskID).Update("done", false).Error
-	/*
-		case "Swap":
-			// prelevare il secondo change legato all'action id del primo change
-			var changeB entity.Change
-			err := db.Where("action_id=?", change.ActionID).First(&changeB).Error //first , ma a regola funziona anche con find
-			if err != nil {
-				return err
-			}
-			// swap in query
-			err = db.Model(&entity.Task{}).Where("id = ?", change.TaskID).Update("position", change.Position).Error
-			if err != nil {
-				return err
-			}
-			err = db.Model(&entity.Task{}).Where("id = ?", changeB.TaskID).Update("position", changeB.Position).Error
-			if err != nil {
-				return err
-			}
-			// cancello il secondo change
-			err = db.Where("id = ?", changeB.ID).Delete(&entity.Change{}).Error
-			if err != nil {
-				return err
-			}
-			return nil
-	*/
 	default:
 		return fmt.Errorf("azione non supportata: %s", change[0].Action)
 	}
+	return nil
 }
