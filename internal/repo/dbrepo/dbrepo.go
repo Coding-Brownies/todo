@@ -135,51 +135,40 @@ func (db *DBRepo) do(task *entity.Task, action, actionID string) error {
 }
 
 func (db *DBRepo) Undo() error {
-	// Trova l'ultima change registrata
-	var c entity.Change
-	err := db.DB.Order("id desc").First(&c).Error
-	if err != nil {
-		return err
-	}
-	// Recupera le changes aventi quell'actionID
 	var changes []entity.Change
-	err = db.DB.Where("action_id=?", c.ActionID).Find(&changes).Error
+	// la subquery trova l'ultima change registrata, e la query recupera le changes aventi quell'actionID
+	// err := db.DB.Where("action_id = (SELECT action_id FROM changes ORDER BY id DESC LIMIT 1)").Find(&changes).Error
+	// join tra la tabella changes e la subquery che restituisce l'action_id dell'ultima change registrata
+	// la clausola ON del join corrisponde/ritrova/riscontra gli action_id in entrambe le tabelle, in modo da recuperare solo le changes con lo stesso action_id
+	err := db.DB.Joins("JOIN (SELECT action_id FROM changes ORDER BY id DESC LIMIT 1) AS last_change ON changes.action_id = last_change.action_id").Find(&changes).Error
 	if err != nil {
 		return err
 	}
-	// per accedere alle informazioni del task nel campo OldStatus, decodificare i byte JSON utilizzando json.Unmarshal()
-	var oldStatus entity.Task
-	err = json.Unmarshal(changes[0].OldStatus, &oldStatus)
-	if err != nil {
-		return err
-	}
-	// elimina le changes correlate a quell'actionID, dato che ne viene effettuato il revert
-	err = db.DB.Exec("DELETE FROM changes WHERE action_id = ?", changes[0].ActionID).Error
-	if err != nil {
-		return err
-	}
-	// Effettua il revert dell'azione
-	switch changes[0].Action {
-	case "Create":
-		return db.DB.Where("id=?", oldStatus.ID).Delete(&entity.Task{}).Error
-	case "Delete":
-		return db.DB.Save(&oldStatus).Error
-	case "Update":
-		// avrà lunghezza 2 solo nel caso dello swap, trattare come 2 Update
-		if len(changes) == 2 {
-			var oldStatusB entity.Task
-			err = json.Unmarshal(changes[1].OldStatus, &oldStatusB)
-			if err != nil {
-				return err
-			}
-			err = db.DB.Save(&oldStatusB).Error
-			if err != nil {
-				return err
-			}
+
+	for _, change := range changes {
+		// per accedere alle informazioni del task nel campo OldStatus, decodificare i byte JSON utilizzando json.Unmarshal()
+		var oldStatus entity.Task
+		err = json.Unmarshal(change.OldStatus, &oldStatus)
+		if err != nil {
+			return err
 		}
-		// casi check, uncheck, edit
-		return db.DB.Save(&oldStatus).Error
-	default:
-		return fmt.Errorf("azione non supportata: %s", changes[0].Action)
+		// elimina la change
+		err = db.DB.Exec("DELETE FROM changes WHERE id = ?", change.ID).Error
+		if err != nil {
+			return err
+		}
+		// Effettua il revert dell'azione
+		switch change.Action {
+		case "Create":
+			return db.DB.Where("id=?", oldStatus.ID).Delete(&entity.Task{}).Error
+		case "Delete", "Update":
+			err = db.DB.Save(&oldStatus).Error
+			if err != nil {
+				return err
+			}
+		default:
+			return fmt.Errorf("unsupported action: %s", change.Action)
+		}
 	}
+	return nil
 }
