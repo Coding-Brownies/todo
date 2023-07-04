@@ -6,6 +6,7 @@ import (
 	"github.com/Coding-Brownies/todo/config"
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
+	"golang.org/x/exp/slices"
 )
 
 var _ help.KeyMap = &KeyMap{}
@@ -60,10 +61,10 @@ func (k *KeyMap) ShortHelp() []key.Binding {
 	}
 }
 
-func replaceSymbols(input string) string {
+func replaceSymbols(inputs []string) string {
 	unicodeMap := map[string]string{
 		"ctrl":      "⌃",
-		" ":         "␣",
+		"space":     "␣",
 		"up":        "↑",
 		"down":      "↓",
 		"left":      "←",
@@ -75,64 +76,77 @@ func replaceSymbols(input string) string {
 		"enter":     "↵",
 		"?":         "?",
 	}
-	words := strings.Split(input, "+")
-	for i, word := range words {
-		if unicodeValue, ok := unicodeMap[word]; ok {
-			words[i] = unicodeValue
+	res := []string{}
+	for _, input := range inputs {
+		words := strings.Split(input, "+")
+		for i, word := range words {
+			if unicodeValue, ok := unicodeMap[word]; ok {
+				words[i] = unicodeValue
+			}
 		}
+		res = append(res, strings.Join(words, "+"))
 	}
-	return strings.Join(words, "+")
+	return strings.Join(res, "/")
 }
 
 func NewKeyMap(cfg *config.Config) *KeyMap {
 	return &KeyMap{
 		Check: key.NewBinding(
-			key.WithKeys(cfg.Check),
+			WithKeys(cfg.Check...),
 			key.WithHelp(replaceSymbols(cfg.Check), "(un)check"),
 		),
 		Quit: key.NewBinding(
-			key.WithKeys(cfg.Quit),
+			WithKeys(cfg.Quit...),
 			key.WithHelp(replaceSymbols(cfg.Quit), "quit"),
 		),
 		SwapUp: key.NewBinding(
-			key.WithKeys(cfg.SwapUp),
+			WithKeys(cfg.SwapUp...),
 			key.WithHelp(replaceSymbols(cfg.SwapUp), "swap up"),
 		),
 		SwapDown: key.NewBinding(
-			key.WithKeys(cfg.SwapDown),
+			WithKeys(cfg.SwapDown...),
 			key.WithHelp(replaceSymbols(cfg.SwapDown), "swap down"),
 		),
 		Remove: key.NewBinding(
-			key.WithKeys(cfg.Remove),
+			WithKeys(cfg.Remove...),
 			key.WithHelp(replaceSymbols(cfg.Remove), "remove"),
 		),
 		Insert: key.NewBinding(
-			key.WithKeys(cfg.Insert),
+			WithKeys(cfg.Insert...),
 			key.WithHelp(replaceSymbols(cfg.Insert), "insert"),
 		),
 		Edit: key.NewBinding(
-			key.WithKeys(cfg.Edit),
+			WithKeys(cfg.Edit...),
 			key.WithHelp(replaceSymbols(cfg.Edit), "edit"),
 		),
 		EditExit: key.NewBinding(
-			key.WithKeys(cfg.EditExit),
+			WithKeys(cfg.EditExit...),
 			key.WithHelp(replaceSymbols(cfg.EditExit), "to exit"),
 		),
 		Up: key.NewBinding(
-			key.WithKeys("up"),
-			key.WithHelp(replaceSymbols("up"), "go up"),
+			WithKeys(cfg.Up...),
+			key.WithHelp(replaceSymbols(cfg.Up), "go up"),
 		),
 		Down: key.NewBinding(
-			key.WithKeys("down"),
-			key.WithHelp(replaceSymbols("down"), "go down"),
+			WithKeys(cfg.Down...),
+			key.WithHelp(replaceSymbols(cfg.Down), "go down"),
 		),
 		Help: key.NewBinding(
-			key.WithKeys(cfg.Help),
+			WithKeys(cfg.Help...),
 			key.WithHelp(replaceSymbols(cfg.Help), "toggle help"),
 		),
 		Undo: key.NewBinding(
-			key.WithKeys(cfg.Undo),
+			WithKeys(cfg.Undo...),
 			key.WithHelp(replaceSymbols(cfg.Undo), "undo"),
 		),
+	}
+}
+
+func WithKeys(keys ...string) key.BindingOpt {
+	return func(b *key.Binding) {
+		if i := slices.Index(keys, "space"); i != -1 {
+			keys[i] = " "
+		}
+		b.SetKeys(keys...)
 	}
 }
