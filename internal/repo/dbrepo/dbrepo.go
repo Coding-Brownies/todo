@@ -2,7 +2,7 @@ package dbrepo
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 
 	"github.com/Coding-Brownies/todo/internal"
 	"github.com/Coding-Brownies/todo/internal/entity"
@@ -12,10 +12,16 @@ import (
 	"gorm.io/gorm/logger"
 )
 
+const (
+	CREATE byte = iota
+	DELETE
+	UPDATE
+)
+
 var _ internal.Repo = &DBRepo{}
 
 type DBRepo struct {
-	*gorm.DB
+	DB *gorm.DB
 }
 
 func New(dbpath string) (*DBRepo, error) {
@@ -37,79 +43,74 @@ func New(dbpath string) (*DBRepo, error) {
 func (db *DBRepo) List() ([]entity.Task, error) {
 	var res []entity.Task
 	// print while ordering by Position (type time.Time)
-	err := db.Order("position").Find(&res).Error
+	err := db.DB.Order("position").Find(&res).Error
 	return res, err
 }
 
 func (db *DBRepo) Add(t *entity.Task) error {
-	t.ID = uuid.New().String()
-	err := db.Create(t).Error
+	t.ID = uuid.NewString()
+	err := db.DB.Create(t).Error
 	if err != nil {
 		return err
 	}
 	// Crea e registra l'azione add nella tabella di registro delle modifiche Change
-	actionID := uuid.New().String()
-	return db.do(t, "Create", actionID)
+	return db.do(t, CREATE, uuid.NewString())
 }
 
 func (db *DBRepo) Delete(t *entity.Task) error {
 	// Crea e registra l'azione delete nella tabella di registro delle modifiche Change
-	actionID := uuid.New().String()
-	err := db.do(t, "Delete", actionID)
+	err := db.do(t, DELETE, uuid.NewString())
 	if err != nil {
 		return err
 	}
 	// elimina il task
-	return db.Where("id=?", t.ID).Delete(&entity.Task{}).Error
+	return db.DB.Where("id=?", t.ID).Delete(&entity.Task{}).Error
 }
 
 func (db *DBRepo) Check(t *entity.Task) error {
 	// Crea e registra l'azione check nella tabella di registro delle modifiche Change
-	actionID := uuid.New().String()
-	err := db.do(t, "Update", actionID)
+	err := db.do(t, UPDATE, uuid.NewString())
 	if err != nil {
 		return err
 	}
-	return db.Model(&entity.Task{}).Where("id = ?", t.ID).Update("done", true).Error
+	return db.DB.Model(&entity.Task{}).Where("id = ?", t.ID).Update("done", true).Error
 }
 
 func (db *DBRepo) Uncheck(t *entity.Task) error {
 	// Crea e registra l'azione uncheck nella tabella di registro delle modifiche Change
-	actionID := uuid.New().String()
-	err := db.do(t, "Update", actionID)
+	err := db.do(t, UPDATE, uuid.NewString())
 	if err != nil {
 		return err
 	}
-	return db.Model(&entity.Task{}).Where("id = ?", t.ID).Update("done", false).Error
+	return db.DB.Model(&entity.Task{}).Where("id = ?", t.ID).Update("done", false).Error
 }
 
 func (db *DBRepo) Edit(t *entity.Task, newDescription string) error {
 	// Crea e registra l'azione edit nella tabella di registro delle modifiche Change
-	actionID := uuid.New().String()
-	err := db.do(t, "Update", actionID)
+	err := db.do(t, UPDATE, uuid.NewString())
 	if err != nil {
 		return err
 	}
 	// edit del campo description
-	return db.Model(&entity.Task{}).Where("id = ?", t.ID).Update("description", newDescription).Error
+	return db.DB.Model(&entity.Task{}).Where("id = ?", t.ID).Update("description", newDescription).Error
 }
 
 func (db *DBRepo) Swap(taskA, taskB *entity.Task) error {
 	actionID := uuid.New().String()
-	err := db.do(taskA, "Update", actionID)
+	err := db.do(taskA, UPDATE, actionID)
 	if err != nil {
 		return err
 	}
-	err = db.do(taskB, "Update", actionID)
+	err = db.do(taskB, UPDATE, actionID)
 	if err != nil {
 		return err
 	}
 	// effettuo la swap
-	err = db.Model(&entity.Task{}).Where("id=?", taskA.ID).Update("position", taskB.Position).Error
+	err = db.DB.Model(&entity.Task{}).Where("id=?", taskA.ID).Update("position", taskB.Position).Error
 	if err != nil {
 		return err
 	}
-	err = db.Model(&entity.Task{}).Where("id=?", taskB.ID).Update("position", taskA.Position).Error
+	err = db.DB.Model(&entity.Task{}).Where("id=?", taskB.ID).Update("position", taskA.Position).Error
 	if err != nil {
 		return err
 	}
@@ -118,7 +119,7 @@ func (db *DBRepo) Swap(taskA, taskB *entity.Task) error {
 
 // funzione ausiliaria Do che accetta un task,
 // ne esegue il marshalling e lo salva nelle tabella di registro delle modifiche Change
-func (db *DBRepo) do(task *entity.Task, action, actionID string) error {
+func (db *DBRepo) do(task *entity.Task, action byte, actionID string) error {
 	// codifica del json come []byte usando Marshal
 	oldStatusJSON, err := json.Marshal(task)
 	if err != nil {
@@ -131,16 +132,23 @@ func (db *DBRepo) do(task *entity.Task, action, actionID string) error {
 		ActionID:  actionID,
 	}
 	// salva il change nella tabella di registro delle modifiche
-	return db.Create(&change).Error
+	return db.DB.Create(&change).Error
 }
 
 func (db *DBRepo) Undo() error {
 	var changes []entity.Change
-	// la subquery trova l'ultima change registrata, e la query recupera le changes aventi quell'actionID
-	// err := db.DB.Where("action_id = (SELECT action_id FROM changes ORDER BY id DESC LIMIT 1)").Find(&changes).Error
-	// join tra la tabella changes e la subquery che restituisce l'action_id dell'ultima change registrata
-	// la clausola ON del join corrisponde/ritrova/riscontra gli action_id in entrambe le tabelle, in modo da recuperare solo le changes con lo stesso action_id
-	err := db.DB.Joins("JOIN (SELECT action_id FROM changes ORDER BY id DESC LIMIT 1) AS last_change ON changes.action_id = last_change.action_id").Find(&changes).Error
+	// find the action_id of the last change
+	subQuery := db.DB.Select("action_id").Order("id desc").Table("changes").Limit(1)
+	// recupera tutte le changes aventi quell'actionID
+	err := db.DB.Where("action_id = (?)", subQuery).Find(&changes).Error
+	if err != nil {
+		return err
+	}
+	if len(changes) == 0 {
+		return errors.New("last change not found")
+	}
+	// delete the changes aventi quell'action_id
+	err = db.DB.Where("action_id = ?", changes[0].ActionID).Delete(&entity.Change{}).Error
 	if err != nil {
 		return err
 	}
@@ -152,22 +160,17 @@ func (db *DBRepo) Undo() error {
 		if err != nil {
 			return err
 		}
-		// elimina la change
-		err = db.DB.Exec("DELETE FROM changes WHERE id = ?", change.ID).Error
-		if err != nil {
-			return err
-		}
 		// Effettua il revert dell'azione
 		switch change.Action {
-		case "Create":
-			return db.DB.Where("id=?", oldStatus.ID).Delete(&entity.Task{}).Error
-		case "Delete", "Update":
+		case CREATE:
+			err = db.DB.Where("id=?", oldStatus.ID).Delete(&entity.Task{}).Error
+		case DELETE, UPDATE:
 			err = db.DB.Save(&oldStatus).Error
-			if err != nil {
-				return err
-			}
 		default:
-			return fmt.Errorf("unsupported action: %s", change.Action)
+			err = errors.New("unsupported action")
+		}
+		if err != nil {
+			return err
 		}
 	}
 	return nil

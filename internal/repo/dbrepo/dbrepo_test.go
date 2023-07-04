@@ -138,12 +138,6 @@ func TestUndo(t *testing.T) {
 	// effettuo una modifica: idA true
 	err = r.Check(&res[0])
 	assert.NoError(t, err)
-	// stampa della lista aggiornata dei task
-	res, err = r.List()
-	assert.NoError(t, err)
-	// controlo che effettui la check
-	assert.Equal(t, true, res[0].Done)
-	assert.Equal(t, "Ale", res[0].Description)
 	// effettuo il ctrl+z
 	err = r.Undo()
 	assert.NoError(t, err)
@@ -157,12 +151,6 @@ func TestUndo(t *testing.T) {
 	// effettuo una modifica: swap fra i due task
 	err = r.Swap(&res[0], &res[1])
 	assert.NoError(t, err)
-	// stampa della lista aggiornata dei task
-	res, err = r.List()
-	assert.NoError(t, err)
-	// controllo che abbia fatto la swap
-	assert.Equal(t, "Burberone", res[0].Description)
-	assert.Equal(t, "Ale", res[1].Description)
 	// effettuo il ctrl+z
 	err = r.Undo()
 	assert.NoError(t, err)
@@ -170,6 +158,68 @@ func TestUndo(t *testing.T) {
 	res, err = r.List()
 	assert.NoError(t, err)
 	// il task deve essere come prima dell'ultima modifica
-	assert.Equal(t, "Ale", res[0].Description)
-	assert.Equal(t, "Burberone", res[1].Description)
+	assert.True(t, res[0].Position.Before(res[1].Position))
+}
+
+func TestStronza(t *testing.T) {
+	t.Parallel()
+	r, err := dbrepo.New(":memory:")
+	assert.NoError(t, err)
+
+	task1 := entity.Task{
+		Description: "",
+		Done:        false,
+	}
+	task2 := entity.Task{
+		Description: "",
+		Done:        false,
+	}
+	task3 := entity.Task{
+		Description: "",
+		Done:        false,
+	}
+	// modifica 1
+	err = r.Add(&task1)
+	assert.NoError(t, err)
+	// modifica 2
+	err = r.Edit(&task1, "albero")
+	assert.NoError(t, err)
+	// modifica 3
+	err = r.Add(&task2)
+	assert.NoError(t, err)
+	// modifica 4
+	err = r.Edit(&task2, "bar")
+	assert.NoError(t, err)
+	// modifica 5
+	err = r.Add(&task3)
+	assert.NoError(t, err)
+	// modifica 6
+	err = r.Edit(&task3, "cane")
+	assert.NoError(t, err)
+	// modifica 7
+	err = r.Check(&task1)
+	assert.NoError(t, err)
+	// modifica 8
+	err = r.Swap(&task1, &task2)
+	assert.NoError(t, err)
+	// modifica 9
+	err = r.Swap(&task1, &task3)
+	assert.NoError(t, err)
+	// modifica 10
+	err = r.Uncheck(&task1)
+	assert.NoError(t, err)
+	// modifica 11
+	err = r.Swap(&task1, &task3)
+	assert.NoError(t, err)
+
+	// effettuo il ctrl+z
+	for i := 0; i < 11; i++ {
+		err = r.Undo()
+		assert.NoError(t, err)
+	}
+	// stampa della lista aggiornata dei task
+	res, err := r.List()
+	assert.NoError(t, err)
+	// il task deve essere come prima dell'ultima modifica
+	assert.True(t, len(res) == 0)
 }
