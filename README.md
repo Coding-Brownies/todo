@@ -31,4 +31,5 @@ bubble:
   editexit: esc
   swapup: shift+up
   swapdown: shift+down
+  undo: ctrl+z
 ```
