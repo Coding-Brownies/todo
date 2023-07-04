@@ -1,6 +1,7 @@
 package dbrepo_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/Coding-Brownies/todo/internal/entity"
@@ -161,62 +162,62 @@ func TestUndo(t *testing.T) {
 	assert.True(t, res[0].Position.Before(res[1].Position))
 }
 
+func GetTaskStatusHash(r *dbrepo.DBRepo) (string, error) {
+	tasks, err := r.List()
+	if err != nil {
+		return "", err
+	}
+	s := ""
+	for _, t := range tasks {
+		s += fmt.Sprint(t.Done) + "-" + t.Description + "-" + t.Position.String() + "|"
+	}
+	return s, nil
+	// res := sha256.Sum256([]byte(s))
+	// return fmt.Sprintf("%x", res), nil
+}
+
 func TestStronza(t *testing.T) {
 	t.Parallel()
 	r, err := dbrepo.New(":memory:")
 	assert.NoError(t, err)
 
-	task1 := entity.Task{
-		Description: "",
-		Done:        false,
-	}
-	task2 := entity.Task{
-		Description: "",
-		Done:        false,
-	}
-	task3 := entity.Task{
-		Description: "",
-		Done:        false,
-	}
-	// modifica 1
-	err = r.Add(&task1)
-	assert.NoError(t, err)
-	// modifica 2
-	err = r.Edit(&task1, "albero")
-	assert.NoError(t, err)
-	// modifica 3
-	err = r.Add(&task2)
-	assert.NoError(t, err)
-	// modifica 4
-	err = r.Edit(&task2, "bar")
-	assert.NoError(t, err)
-	// modifica 5
-	err = r.Add(&task3)
-	assert.NoError(t, err)
-	// modifica 6
-	err = r.Edit(&task3, "cane")
-	assert.NoError(t, err)
-	// modifica 7
-	err = r.Check(&task1)
-	assert.NoError(t, err)
-	// modifica 8
-	err = r.Swap(&task1, &task2)
-	assert.NoError(t, err)
-	// modifica 9
-	err = r.Swap(&task1, &task3)
-	assert.NoError(t, err)
-	// modifica 10
-	err = r.Uncheck(&task1)
-	assert.NoError(t, err)
-	// modifica 11
-	err = r.Swap(&task1, &task3)
-	assert.NoError(t, err)
+	var (
+		task1 entity.Task
+		task2 entity.Task
+		task3 entity.Task
+	)
 
-	// effettuo il ctrl+z
-	for i := 0; i < 11; i++ {
+	mods := []func(){
+		func() { r.Add(&task1) },
+		func() { r.Edit(&task1, "albero") },
+		func() { r.Add(&task2) },
+		func() { r.Edit(&task2, "bar") },
+		func() { r.Add(&task3) },
+		func() { r.Edit(&task3, "cane") },
+		func() { r.Check(&task1) },
+		func() { r.Swap(&task1, &task2) },
+		func() { r.Swap(&task1, &task3) },
+		func() { r.Check(&task1) },
+		func() { r.Swap(&task1, &task3) },
+	}
+
+	statuses := make([]string, len(mods))
+	for i := 0; i < len(mods); i++ {
+		status, err := GetTaskStatusHash(r)
+		assert.NoError(t, err)
+		statuses[i] = status
+
+		mods[i]()
+	}
+
+	for i := len(mods) - 1; i >= 0; i-- {
 		err = r.Undo()
 		assert.NoError(t, err)
+		status, err := GetTaskStatusHash(r)
+		assert.NoError(t, err)
+		assert.Equal(t, statuses[i], status, i)
 	}
+
 	// stampa della lista aggiornata dei task
 	res, err := r.List()
 	assert.NoError(t, err)

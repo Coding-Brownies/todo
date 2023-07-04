@@ -73,13 +73,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				break
 			}
 			if i, ok := m.list.SelectedItem().(entity.Task); ok {
-				if i.Done {
-					m.repo.Uncheck(&i)
-				} else {
-					m.repo.Check(&i)
-				}
-
-				i.Done = !i.Done
+				m.repo.Check(&i)
 				m.list.SetItem(m.list.Index(), i)
 			}
 
@@ -173,11 +167,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Store changes synchronously
 			m.repo.Edit(&cur, m.textInput.Value())
 
-			m.list.SetItem(m.list.Index(), entity.Task{
-				Done:        cur.Done,
-				Description: m.textInput.Value(),
-				ID:          cur.ID,
-			})
+			m.list.SetItem(m.list.Index(), cur)
 			m.editing = false
 
 		case key.Matches(msg, m.keymap.Undo):

@@ -49,12 +49,13 @@ func (db *DBRepo) List() ([]entity.Task, error) {
 
 func (db *DBRepo) Add(t *entity.Task) error {
 	t.ID = uuid.NewString()
-	err := db.DB.Create(t).Error
+
+	err := db.do(t, CREATE, uuid.NewString())
 	if err != nil {
 		return err
 	}
-	// Crea e registra l'azione add nella tabella di registro delle modifiche Change
-	return db.do(t, CREATE, uuid.NewString())
+
+	return db.DB.Create(t).Error
 }
 
 func (db *DBRepo) Delete(t *entity.Task) error {
@@ -73,16 +74,8 @@ func (db *DBRepo) Check(t *entity.Task) error {
 	if err != nil {
 		return err
 	}
-	return db.DB.Model(&entity.Task{}).Where("id = ?", t.ID).Update("done", true).Error
-}
-
-func (db *DBRepo) Uncheck(t *entity.Task) error {
-	// Crea e registra l'azione uncheck nella tabella di registro delle modifiche Change
-	err := db.do(t, UPDATE, uuid.NewString())
-	if err != nil {
-		return err
-	}
-	return db.DB.Model(&entity.Task{}).Where("id = ?", t.ID).Update("done", false).Error
+	t.Done = !t.Done
+	return db.DB.Save(t).Error
 }
 
 func (db *DBRepo) Edit(t *entity.Task, newDescription string) error {
@@ -91,12 +84,12 @@ func (db *DBRepo) Edit(t *entity.Task, newDescription string) error {
 	if err != nil {
 		return err
 	}
-	// edit del campo description
-	return db.DB.Model(&entity.Task{}).Where("id = ?", t.ID).Update("description", newDescription).Error
+	t.Description = newDescription
+	return db.DB.Save(t).Error
 }
 
 func (db *DBRepo) Swap(taskA, taskB *entity.Task) error {
-	actionID := uuid.New().String()
+	actionID := uuid.NewString()
 	err := db.do(taskA, UPDATE, actionID)
 	if err != nil {
 		return err
@@ -105,12 +98,16 @@ func (db *DBRepo) Swap(taskA, taskB *entity.Task) error {
 	if err != nil {
 		return err
 	}
+
+	tmp := taskA.Position
+	taskA.Position = taskB.Position
+	taskB.Position = tmp
 	// effettuo la swap
-	err = db.DB.Model(&entity.Task{}).Where("id=?", taskA.ID).Update("position", taskB.Position).Error
+	err = db.DB.Save(taskA).Error
 	if err != nil {
 		return err
 	}
-	err = db.DB.Model(&entity.Task{}).Where("id=?", taskB.ID).Update("position", taskA.Position).Error
+	err = db.DB.Save(taskB).Error
 	if err != nil {
 		return err
 	}
@@ -136,11 +133,16 @@ func (db *DBRepo) do(task *entity.Task, action byte, actionID string) error {
 }
 
 func (db *DBRepo) Undo() error {
-	var changes []entity.Change
 	// find the action_id of the last change
-	subQuery := db.DB.Select("action_id").Order("id desc").Table("changes").Limit(1)
+
+	var change entity.Change
+	err := db.DB.Order("id desc").First(&change).Error
+	if err != nil {
+		return err
+	}
 	// recupera tutte le changes aventi quell'actionID
-	err := db.DB.Where("action_id = (?)", subQuery).Find(&changes).Error
+	var changes []entity.Change
+	err = db.DB.Where("action_id = ?", change.ActionID).Find(&changes).Error
 	if err != nil {
 		return err
 	}
