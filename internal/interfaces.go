@@ -10,4 +10,6 @@ type Repo interface {
 	Edit(t *entity.Task, newDescription string) error
 	Swap(taskA, taskB *entity.Task) error
 	Undo() error
+	ListBin() ([]entity.Task, error)
+	Restore(task *entity.Task) error
 }

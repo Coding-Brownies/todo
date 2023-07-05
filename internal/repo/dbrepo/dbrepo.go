@@ -61,13 +61,14 @@ func (db *DBRepo) Add(t *entity.Task) error {
 }
 
 func (db *DBRepo) Delete(t *entity.Task) error {
+	// soft delete, per questo risulta come UPDATE
 	// Crea e registra l'azione delete nella tabella di registro delle modifiche Change
-	err := db.do(t, DELETE, uuid.NewString())
+	err := db.do(t, UPDATE, uuid.NewString())
 	if err != nil {
 		return err
 	}
 	// elimina il task
-	return db.DB.Where("id=?", t.ID).Delete(&entity.Task{}).Error
+	return db.DB.Where("id = ?", t.ID).Delete(&entity.Task{}).Error
 }
 
 func (db *DBRepo) Check(t *entity.Task) error {
@@ -186,7 +187,8 @@ func (db *DBRepo) Undo() error {
 		// Effettua il revert dell'azione
 		switch change.Action {
 		case CREATE:
-			err = db.DB.Where("id=?", oldStatus.ID).Delete(&entity.Task{}).Error
+			// Unscoped delete permanently
+			err = db.DB.Unscoped().Where("id = ?", oldStatus.ID).Delete(&entity.Task{}).Error
 		case DELETE, UPDATE:
 			err = db.DB.Save(&oldStatus).Error
 		default:
@@ -197,4 +199,15 @@ func (db *DBRepo) Undo() error {
 		}
 	}
 	return nil
+}
+
+func (db *DBRepo) ListBin() ([]entity.Task, error) {
+	var res []entity.Task
+	// You can find soft deleted records with Unscoped
+	err := db.DB.Unscoped().Where("deleted_at <> ?", "").Find(&res).Error
+	return res, err
+}
+
+func (db *DBRepo) Restore(task *entity.Task) error {
+	return db.DB.Model(&entity.Task{}).Where("id = ?", task.ID).Update("deleted_at", nil).Error
 }

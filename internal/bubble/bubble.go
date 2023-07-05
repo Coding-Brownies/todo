@@ -22,6 +22,7 @@ type model struct {
 	err       error
 	editing   bool
 	bigHelp   bool
+	listBin   bool
 	repo      internal.Repo
 }
 
@@ -54,6 +55,25 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.textInput, cmd = m.textInput.Update(msg)
 		return m, cmd
 	}
+	if m.listBin {
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			switch {
+			case key.Matches(msg, m.keymap.Bin):
+				m.listBin = !m.listBin
+			case key.Matches(msg, m.keymap.Restore):
+				if i, ok := m.list.SelectedItem().(entity.Task); ok {
+					m.repo.Restore(&i)
+				}
+			}
+		case error:
+			m.err = msg
+			return m, nil
+		}
+
+		return m, m.Init()
+
+	}
 
 	switch msg := msg.(type) {
 
@@ -63,6 +83,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		switch {
+		case key.Matches(msg, m.keymap.Bin):
+			m.listBin = !m.listBin
+
 		case key.Matches(msg, m.keymap.Help):
 			m.bigHelp = !m.bigHelp
 
@@ -191,6 +214,11 @@ func (m model) View() string {
 			m.textInput.View(),
 			m.list.Help.ShortHelpView([]key.Binding{m.keymap.EditExit}),
 		) + "\n"
+	}
+	if m.listBin {
+		m.list.Title = "Bin"
+	} else {
+		m.list.Title = "Task"
 	}
 
 	help := m.list.Help.ShortHelpView(m.keymap.ShortHelp())
