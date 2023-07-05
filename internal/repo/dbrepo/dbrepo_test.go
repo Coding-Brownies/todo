@@ -11,7 +11,7 @@ import (
 
 func TestList(t *testing.T) {
 	t.Parallel()
-	r, err := dbrepo.New(":memory:")
+	r, err := dbrepo.New(":memory:", 10)
 	assert.NoError(t, err)
 
 	task := &entity.Task{
@@ -27,7 +27,7 @@ func TestList(t *testing.T) {
 
 func TestCheck(t *testing.T) {
 	t.Parallel()
-	r, err := dbrepo.New(":memory:")
+	r, err := dbrepo.New(":memory:", 10)
 	assert.NoError(t, err)
 
 	task := &entity.Task{
@@ -45,7 +45,7 @@ func TestCheck(t *testing.T) {
 
 func TestEdit(t *testing.T) {
 	t.Parallel()
-	r, err := dbrepo.New(":memory:")
+	r, err := dbrepo.New(":memory:", 10)
 	assert.NoError(t, err)
 
 	task := &entity.Task{
@@ -63,7 +63,7 @@ func TestEdit(t *testing.T) {
 
 func TestSwap(t *testing.T) {
 	t.Parallel()
-	r, err := dbrepo.New(":memory:")
+	r, err := dbrepo.New(":memory:", 10)
 	assert.NoError(t, err)
 
 	tasks := []*entity.Task{
@@ -107,7 +107,7 @@ func GetTaskStatusHash(r *dbrepo.DBRepo) (string, error) {
 
 func TestUndo(t *testing.T) {
 	t.Parallel()
-	r, err := dbrepo.New(":memory:")
+	r, err := dbrepo.New(":memory:", -1)
 	assert.NoError(t, err)
 
 	var (
