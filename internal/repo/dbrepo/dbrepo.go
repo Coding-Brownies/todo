@@ -129,7 +129,26 @@ func (db *DBRepo) do(task *entity.Task, action byte, actionID string) error {
 		ActionID:  actionID,
 	}
 	// salva il change nella tabella di registro delle modifiche
-	return db.DB.Create(&change).Error
+	err = db.DB.Create(&change).Error
+	if err != nil {
+		return err
+	}
+
+	var count int64
+	err = db.DB.Model(&entity.Change{}).Distinct("action_id").Count(&count).Error
+	if err != nil {
+		return err
+	}
+	if count <= 10 {
+		return nil
+	}
+	var c entity.Change
+	err = db.DB.Order("id").First(&c).Error
+	if err != nil {
+		return err
+	}
+	return db.DB.Where("action_id = ?", c.ActionID).Delete(&entity.Change{}).Error
+
 }
 
 func (db *DBRepo) Undo() error {
