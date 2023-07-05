@@ -30,6 +30,31 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+
+	if m.editing {
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			if key.Matches(msg, m.keymap.EditExit) {
+				cur, ok := m.list.SelectedItem().(entity.Task)
+				if !ok {
+					break
+				}
+				// Store changes synchronously
+				m.repo.Edit(&cur, m.textInput.Value())
+
+				m.list.SetItem(m.list.Index(), cur)
+				m.editing = false
+			}
+		case error:
+			m.err = msg
+			return m, nil
+		}
+
+		var cmd tea.Cmd
+		m.textInput, cmd = m.textInput.Update(msg)
+		return m, cmd
+	}
+
 	switch msg := msg.(type) {
 
 	case tea.WindowSizeMsg:
@@ -38,17 +63,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		switch {
-		// case in which the m.bigHelp field of the model is changed
 		case key.Matches(msg, m.keymap.Help):
-			if m.editing {
-				break
-			}
 			m.bigHelp = !m.bigHelp
 
 		case key.Matches(msg, m.keymap.Up):
-			if m.editing {
-				break
-			}
 			before := m.list.Index() - 1
 			if before < 0 {
 				before = 0
@@ -56,9 +74,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.list.Select(before)
 
 		case key.Matches(msg, m.keymap.Down):
-			if m.editing {
-				break
-			}
 			next := m.list.Index() + 1
 			if next > len(m.list.Items())-1 {
 				next = len(m.list.Items()) - 1
@@ -69,18 +84,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case key.Matches(msg, m.keymap.Check):
-			if m.editing {
-				break
-			}
 			if i, ok := m.list.SelectedItem().(entity.Task); ok {
 				m.repo.Check(&i)
 				m.list.SetItem(m.list.Index(), i)
 			}
 
 		case key.Matches(msg, m.keymap.SwapUp):
-			if m.editing {
-				break
-			}
 			cur, ok := m.list.SelectedItem().(entity.Task)
 			if !ok {
 				break
@@ -98,9 +107,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.list.SetItem(m.list.Index()+1, above)
 
 		case key.Matches(msg, m.keymap.SwapDown):
-			if m.editing {
-				break
-			}
 			cur, ok := m.list.SelectedItem().(entity.Task)
 			if !ok {
 				break
@@ -118,10 +124,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.list.SetItem(m.list.Index()-1, below)
 
 		case key.Matches(msg, m.keymap.Insert):
-			if m.editing {
-				break
-			}
-			// Store changes synchronously
 			t := &entity.Task{}
 			m.repo.Add(t)
 
@@ -130,50 +132,25 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.list.Select(index)
 
 		case key.Matches(msg, m.keymap.Remove):
-			if m.editing {
-				break
-			}
 			// Store changes synchronously
 			if i, ok := m.list.SelectedItem().(entity.Task); ok {
 				m.repo.Delete(&i)
 			}
-
-			if m.list.Index() == len(m.list.Items())-1 && len(m.list.Items()) > 1 {
-				m.list.RemoveItem(m.list.Index())
+			m.list.RemoveItem(m.list.Index())
+			// if the index is out of bound set it back
+			if m.list.Index() == len(m.list.Items()) {
 				m.list.Select(m.list.Index() - 1)
-			} else {
-				m.list.RemoveItem(m.list.Index())
 			}
 
 		case key.Matches(msg, m.keymap.Edit):
-			if m.editing {
+			cur, ok := m.list.SelectedItem().(entity.Task)
+			if !ok {
 				break
 			}
 			m.editing = true
-			cur, ok := m.list.SelectedItem().(entity.Task)
-			if !ok {
-				break
-			}
 			m.textInput.SetValue(cur.Description)
 
-		case key.Matches(msg, m.keymap.EditExit):
-			if !m.editing {
-				break
-			}
-			cur, ok := m.list.SelectedItem().(entity.Task)
-			if !ok {
-				break
-			}
-			// Store changes synchronously
-			m.repo.Edit(&cur, m.textInput.Value())
-
-			m.list.SetItem(m.list.Index(), cur)
-			m.editing = false
-
 		case key.Matches(msg, m.keymap.Undo):
-			if m.editing {
-				break
-			}
 			m.repo.Undo()
 			tasks, _ := m.repo.List()
 			items := make([]list.Item, len(tasks))
@@ -190,13 +167,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case error:
 		m.err = msg
 		return m, nil
-	}
-
-	var cmd tea.Cmd
-
-	if m.editing {
-		m.textInput, cmd = m.textInput.Update(msg)
-		return m, cmd
 	}
 
 	return m, m.Init()
