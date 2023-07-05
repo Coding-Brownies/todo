@@ -209,5 +209,6 @@ func (db *DBRepo) ListBin() ([]entity.Task, error) {
 }
 
 func (db *DBRepo) Restore(task *entity.Task) error {
-	return db.DB.Model(&entity.Task{}).Where("id = ?", task.ID).Update("deleted_at", nil).Error
+	return db.DB.Unscoped().Model(&entity.Task{}).
+		Where("id = ?", task.ID).Update("deleted_at", nil).Error
 }
