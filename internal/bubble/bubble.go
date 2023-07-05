@@ -161,6 +161,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.list.Index() > len(items)-1 {
 				m.list.Select(len(items) - 1)
 			}
+
+		default:
+			cur, ok := m.list.SelectedItem().(entity.Task)
+			if !ok {
+				break
+			}
+			if cur.Description != "" {
+				break
+			}
+			m.editing = true
+			m.textInput.SetValue(msg.String())
+
 		}
 
 	// We handle errors just like any other message
