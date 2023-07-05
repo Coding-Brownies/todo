@@ -1,6 +1,7 @@
 package dbrepo_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/Coding-Brownies/todo/internal/entity"
@@ -20,11 +21,8 @@ func TestList(t *testing.T) {
 	err = r.Add(task)
 	assert.NoError(t, err)
 
-	res, err := r.List()
-	assert.NoError(t, err)
-	assert.Len(t, res, 1)
-	assert.Equal(t, res[0].Description, "lel")
-	assert.Equal(t, res[0].Done, true)
+	assert.Equal(t, task.Description, "lel")
+	assert.Equal(t, task.Done, true)
 }
 
 func TestCheck(t *testing.T) {
@@ -39,18 +37,10 @@ func TestCheck(t *testing.T) {
 	err = r.Add(task)
 	assert.NoError(t, err)
 
-	res, err := r.List()
-	assert.NoError(t, err)
-	assert.Len(t, res, 1)
-
-	err = r.Check(res[0].ID)
+	err = r.Check(task)
 	assert.NoError(t, err)
 
-	res, err = r.List()
-	assert.NoError(t, err)
-
-	assert.Len(t, res, 1)
-	assert.Equal(t, true, res[0].Done)
+	assert.Equal(t, true, task.Done)
 }
 
 func TestEdit(t *testing.T) {
@@ -65,17 +55,10 @@ func TestEdit(t *testing.T) {
 	err = r.Add(task)
 	assert.NoError(t, err)
 
-	res, err := r.List()
+	err = r.Edit(task, "ghes")
 	assert.NoError(t, err)
 
-	err = r.Edit(res[0].ID, "ghes")
-	assert.NoError(t, err)
-
-	res, err = r.List()
-	assert.NoError(t, err)
-
-	assert.Len(t, res, 1)
-	assert.Equal(t, "ghes", res[0].Description)
+	assert.Equal(t, "ghes", task.Description)
 }
 
 func TestSwap(t *testing.T) {
@@ -83,7 +66,7 @@ func TestSwap(t *testing.T) {
 	r, err := dbrepo.New(":memory:")
 	assert.NoError(t, err)
 
-	tasks := []entity.Task{
+	tasks := []*entity.Task{
 		{
 			Description: "calamaroA",
 			Done:        false,
@@ -95,81 +78,78 @@ func TestSwap(t *testing.T) {
 	}
 
 	for _, task := range tasks {
-		err = r.Add(&task)
+		err = r.Add(task)
 		assert.NoError(t, err)
 	}
 
-	res, err := r.List()
+	fmt.Println(tasks)
+
+	err = r.Swap(tasks[0], tasks[1])
 	assert.NoError(t, err)
 
-	err = r.Swap(&res[0], &res[1])
-	assert.NoError(t, err)
+	assert.True(t, tasks[1].Position.Before(tasks[0].Position))
 
-	res, err = r.List()
-	assert.NoError(t, err)
+}
 
-	assert.Len(t, res, 2)
-	assert.Equal(t, res[0].Description, "cotechinoB")
-	assert.Equal(t, res[0].Done, true)
-	assert.Equal(t, res[1].Description, "calamaroA")
-	assert.Equal(t, res[1].Done, false)
+func GetTaskStatusHash(r *dbrepo.DBRepo) (string, error) {
+	tasks, err := r.List()
+	if err != nil {
+		return "", err
+	}
+	s := ""
+	for _, t := range tasks {
+		s += fmt.Sprint(t.Done) + "-" + t.Description + "-" + t.Position.String() + "|"
+	}
+	return s, nil
+	// res := sha256.Sum256([]byte(s))
+	// return fmt.Sprintf("%x", res), nil
 }
 
 func TestUndo(t *testing.T) {
 	t.Parallel()
 	r, err := dbrepo.New(":memory:")
 	assert.NoError(t, err)
-	tasks := []entity.Task{
-		{
-			Description: "Ale",
-			Done:        false,
-		},
-		{
-			Description: "Burberone",
-			Done:        true,
-		},
+
+	var (
+		task1 entity.Task
+		task2 entity.Task
+		task3 entity.Task
+	)
+
+	mods := []func(){
+		func() { r.Add(&task1) },
+		func() { r.Edit(&task1, "Ale") },
+		func() { r.Add(&task2) },
+		func() { r.Edit(&task2, "Burberone") },
+		func() { r.Add(&task3) },
+		func() { r.Edit(&task3, "Calamaro") },
+		func() { r.Check(&task1) },
+		func() { r.Swap(&task1, &task2) },
+		func() { r.Swap(&task1, &task3) },
+		func() { r.Check(&task1) },
+		func() { r.Swap(&task1, &task3) },
 	}
-	for _, task := range tasks {
-		err = r.Add(&task)
+
+	statuses := make([]string, len(mods))
+	for i := 0; i < len(mods); i++ {
+		status, err := GetTaskStatusHash(r)
 		assert.NoError(t, err)
+		statuses[i] = status
+
+		mods[i]()
 	}
+
+	for i := len(mods) - 1; i >= 0; i-- {
+		err = r.Undo()
+		assert.NoError(t, err)
+		status, err := GetTaskStatusHash(r)
+		assert.NoError(t, err)
+		assert.Equal(t, statuses[i], status, i)
+	}
+
+	// stampa della lista aggiornata dei task
 	res, err := r.List()
 	assert.NoError(t, err)
-	// effettuo una modifica: idA true
-	err = r.Check(res[0].ID)
-	assert.NoError(t, err)
-	// stampa della lista aggiornata dei task
-	res, err = r.List()
-	assert.NoError(t, err)
-	// controlo che effettui la check
-	assert.Equal(t, true, res[0].Done)
-	assert.Equal(t, "Ale", res[0].Description)
-	// effettuo il ctrl+z
-	err = r.Undo()
-	assert.NoError(t, err)
-	// stampa della lista aggiornata dei task
-	res, err = r.List()
-	assert.NoError(t, err)
 	// il task deve essere come prima dell'ultima modifica
-	assert.Equal(t, false, res[0].Done)
-	assert.Equal(t, "Ale", res[0].Description)
-
-	// effettuo una modifica: swap fra i due task
-	err = r.Swap(&res[0], &res[1])
-	assert.NoError(t, err)
-	// stampa della lista aggiornata dei task
-	res, err = r.List()
-	assert.NoError(t, err)
-	// controllo che abbia fatto la swap
-	assert.Equal(t, "Burberone", res[0].Description)
-	assert.Equal(t, "Ale", res[1].Description)
-	// effettuo il ctrl+z
-	err = r.Undo()
-	assert.NoError(t, err)
-	// stampa della lista aggiornata dei task
-	res, err = r.List()
-	assert.NoError(t, err)
-	// il task deve essere come prima dell'ultima modifica
-	assert.Equal(t, "Ale", res[0].Description)
-	assert.Equal(t, "Burberone", res[1].Description)
+	assert.True(t, len(res) == 0)
 }

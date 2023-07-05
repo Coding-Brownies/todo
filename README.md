@@ -33,8 +33,11 @@ bubble:
   editexit: esc
   swapup: shift+up
   swapdown: shift+down
+  undo: ctrl+z
 ```
 
 ## Change Log
 
 - `02/07/2023`: multiple keybindings can be associated with the same action
+- `04/07/2023`: ctrl+z
+ 
