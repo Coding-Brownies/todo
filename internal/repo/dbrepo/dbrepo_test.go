@@ -11,7 +11,7 @@ import (
 
 func TestList(t *testing.T) {
 	t.Parallel()
-	r, err := dbrepo.New(":memory:")
+	r, err := dbrepo.New(":memory:", 10)
 	assert.NoError(t, err)
 
 	task := &entity.Task{
@@ -27,7 +27,7 @@ func TestList(t *testing.T) {
 
 func TestCheck(t *testing.T) {
 	t.Parallel()
-	r, err := dbrepo.New(":memory:")
+	r, err := dbrepo.New(":memory:", 10)
 	assert.NoError(t, err)
 
 	task := &entity.Task{
@@ -45,7 +45,7 @@ func TestCheck(t *testing.T) {
 
 func TestEdit(t *testing.T) {
 	t.Parallel()
-	r, err := dbrepo.New(":memory:")
+	r, err := dbrepo.New(":memory:", 10)
 	assert.NoError(t, err)
 
 	task := &entity.Task{
@@ -63,7 +63,7 @@ func TestEdit(t *testing.T) {
 
 func TestSwap(t *testing.T) {
 	t.Parallel()
-	r, err := dbrepo.New(":memory:")
+	r, err := dbrepo.New(":memory:", 10)
 	assert.NoError(t, err)
 
 	tasks := []*entity.Task{
@@ -107,7 +107,7 @@ func GetTaskStatusHash(r *dbrepo.DBRepo) (string, error) {
 
 func TestUndo(t *testing.T) {
 	t.Parallel()
-	r, err := dbrepo.New(":memory:")
+	r, err := dbrepo.New(":memory:", -1)
 	assert.NoError(t, err)
 
 	var (
@@ -152,4 +152,44 @@ func TestUndo(t *testing.T) {
 	assert.NoError(t, err)
 	// il task deve essere come prima dell'ultima modifica
 	assert.True(t, len(res) == 0)
+}
+
+func TestHistoryLen(t *testing.T) {
+	t.Parallel()
+
+	const historyLen = 2
+	r, err := dbrepo.New(":memory:", historyLen)
+	assert.NoError(t, err)
+
+	var (
+		task1 entity.Task
+		task2 entity.Task
+	)
+
+	mods := []func(){
+		func() { r.Add(&task1) },
+		func() { r.Edit(&task1, "Ale") },
+		func() { r.Add(&task2) },
+		func() { r.Edit(&task2, "Burberone") },
+	}
+
+	statuses := make([]string, len(mods))
+	for i := 0; i < len(mods); i++ {
+		status, err := GetTaskStatusHash(r)
+		assert.NoError(t, err)
+		statuses[i] = status
+
+		mods[i]()
+	}
+
+	for i := len(mods) - 1; i >= 0; i-- {
+		_ = r.Undo()
+		status, err := GetTaskStatusHash(r)
+		assert.NoError(t, err)
+		index := i
+		if index < historyLen {
+			index = historyLen
+		}
+		assert.Equal(t, statuses[index], status, i)
+	}
 }

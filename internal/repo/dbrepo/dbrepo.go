@@ -21,10 +21,11 @@ const (
 var _ internal.Repo = &DBRepo{}
 
 type DBRepo struct {
-	DB *gorm.DB
+	DB         *gorm.DB
+	historyLen int
 }
 
-func New(dbpath string) (*DBRepo, error) {
+func New(dbpath string, historyLen int) (*DBRepo, error) {
 	db, err := gorm.Open(sqlite.Open(dbpath), &gorm.Config{
 		//TODO: silent only record not found
 		Logger: logger.Default.LogMode(logger.Silent),
@@ -36,7 +37,8 @@ func New(dbpath string) (*DBRepo, error) {
 	db.AutoMigrate(&entity.Task{}, &entity.Change{})
 
 	return &DBRepo{
-		DB: db,
+		DB:         db,
+		historyLen: historyLen,
 	}, nil
 }
 
@@ -129,7 +131,26 @@ func (db *DBRepo) do(task *entity.Task, action byte, actionID string) error {
 		ActionID:  actionID,
 	}
 	// salva il change nella tabella di registro delle modifiche
-	return db.DB.Create(&change).Error
+	err = db.DB.Create(&change).Error
+	if err != nil {
+		return err
+	}
+
+	var count int64
+	err = db.DB.Model(&entity.Change{}).Distinct("action_id").Count(&count).Error
+	if err != nil {
+		return err
+	}
+	if count <= int64(db.historyLen) || db.historyLen == -1 {
+		return nil
+	}
+	var c entity.Change
+	err = db.DB.Order("id").First(&c).Error
+	if err != nil {
+		return err
+	}
+	return db.DB.Where("action_id = ?", c.ActionID).Delete(&entity.Change{}).Error
+
 }
 
 func (db *DBRepo) Undo() error {

@@ -16,7 +16,7 @@ func main() {
 		fmt.Println("Error: ", err)
 	}
 
-	r, err := dbrepo.New(os.Getenv("HOME") + "/.local/share/store.db")
+	r, err := dbrepo.New(os.Getenv("HOME")+"/.local/share/store.db", 30)
 	if err != nil {
 		fmt.Println("Error: ", err)
 	}
