@@ -234,6 +234,14 @@ func (m model) View() string {
 		) + "\n"
 	}
 
+	if m.listBin {
+		return fmt.Sprintf(
+			"\n%s\n\n%s",
+			m.list.View(),
+			m.list.Help.ShortHelpView([]key.Binding{m.keymap.Quit, m.keymap.Bin, m.keymap.Restore}),
+		) + "\n"
+	}
+
 	help := m.list.Help.ShortHelpView(m.keymap.ShortHelp())
 	if m.bigHelp {
 		help = m.list.Help.FullHelpView(m.keymap.FullHelp())
