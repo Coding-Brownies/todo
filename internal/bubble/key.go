@@ -26,6 +26,7 @@ type KeyMap struct {
 	Undo     key.Binding
 	Bin      key.Binding
 	Restore  key.Binding
+	EmptyBin key.Binding
 }
 
 // FullHelp implements help.KeyMap.
@@ -47,7 +48,6 @@ func (k *KeyMap) FullHelp() [][]key.Binding {
 			k.Edit,
 			k.Undo,
 			k.Bin,
-			k.Restore,
 			k.Help,
 		},
 	}
@@ -148,6 +148,10 @@ func NewKeyMap(cfg *config.Config) *KeyMap {
 		Restore: key.NewBinding(
 			WithKeys(cfg.Restore...),
 			key.WithHelp(replaceSymbols(cfg.Restore), "restore"),
+		),
+		EmptyBin: key.NewBinding(
+			WithKeys(cfg.EmptyBin...),
+			key.WithHelp(replaceSymbols(cfg.EmptyBin), "empty the bin"),
 		),
 	}
 }

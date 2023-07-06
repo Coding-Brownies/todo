@@ -189,7 +189,9 @@ func (db *DBRepo) Undo() error {
 		case CREATE:
 			// Unscoped delete permanently
 			err = db.DB.Unscoped().Where("id = ?", oldStatus.ID).Delete(&entity.Task{}).Error
-		case DELETE, UPDATE:
+		case DELETE:
+			err = db.DB.Unscoped().Where("id = ?", oldStatus.ID).Update("deleted_at", nil).Error
+		case UPDATE:
 			err = db.DB.Save(&oldStatus).Error
 		default:
 			err = errors.New("unsupported action")
@@ -204,11 +206,15 @@ func (db *DBRepo) Undo() error {
 func (db *DBRepo) ListBin() ([]entity.Task, error) {
 	var res []entity.Task
 	// You can find soft deleted records with Unscoped
-	err := db.DB.Unscoped().Where("deleted_at <> ?", "").Find(&res).Error
+	err := db.DB.Unscoped().Where("deleted_at <> ?", nil).Find(&res).Error
 	return res, err
 }
 
 func (db *DBRepo) Restore(task *entity.Task) error {
 	return db.DB.Unscoped().Model(&entity.Task{}).
 		Where("id = ?", task.ID).Update("deleted_at", nil).Error
+}
+
+func (db *DBRepo) EmptyBin() error {
+	return db.DB.Unscoped().Where("deleted_at <> ?", nil).Delete(&entity.Task{}).Error
 }

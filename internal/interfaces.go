@@ -12,4 +12,5 @@ type Repo interface {
 	Undo() error
 	ListBin() ([]entity.Task, error)
 	Restore(task *entity.Task) error
+	EmptyBin() error
 }

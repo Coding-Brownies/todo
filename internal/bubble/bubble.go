@@ -86,6 +86,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.list.Select(next)
 			case key.Matches(msg, m.keymap.Quit):
 				return m, tea.Quit
+
+			case key.Matches(msg, m.keymap.EmptyBin):
+				m.repo.EmptyBin()
+				setList([]entity.Task{}, &m.list)
 			}
 
 		case error:
@@ -213,15 +217,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.editing = true
 			m.textInput.SetValue(msg.String())
-
 		}
-
 	// We handle errors just like any other message
 	case error:
 		m.err = msg
 		return m, nil
 	}
-
 	return m, m.Init()
 }
 
@@ -238,7 +239,7 @@ func (m model) View() string {
 		return fmt.Sprintf(
 			"\n%s\n\n%s",
 			m.list.View(),
-			m.list.Help.ShortHelpView([]key.Binding{m.keymap.Quit, m.keymap.Bin, m.keymap.Restore}),
+			m.list.Help.ShortHelpView([]key.Binding{m.keymap.Quit, m.keymap.Bin, m.keymap.Restore, m.keymap.EmptyBin}),
 		) + "\n"
 	}
 
