@@ -117,7 +117,7 @@ func (db *DBRepo) Swap(taskA, taskB *entity.Task) error {
 	return nil
 }
 
-// funzione ausiliaria Do che accetta un task,
+// funzione ausiliaria che accetta un task,
 // ne esegue il marshalling e lo salva nelle tabella di registro delle modifiche Change
 func (db *DBRepo) do(task *entity.Task, action byte, actionID string) error {
 	// codifica del json come []byte usando Marshal
@@ -136,22 +136,25 @@ func (db *DBRepo) do(task *entity.Task, action byte, actionID string) error {
 	if err != nil {
 		return err
 	}
+	return nil
 
 	var count int64
 	err = db.DB.Model(&entity.Change{}).Distinct("action_id").Count(&count).Error
 	if err != nil {
 		return err
 	}
+
 	if count <= int64(db.historyLen) || db.historyLen == -1 {
 		return nil
 	}
+
 	var c entity.Change
 	err = db.DB.Order("id").First(&c).Error
 	if err != nil {
 		return err
 	}
-	return db.DB.Where("action_id = ?", c.ActionID).Delete(&entity.Change{}).Error
 
+	return db.DB.Where("action_id = ?", c.ActionID).Delete(&entity.Change{}).Error
 }
 
 func (db *DBRepo) Undo() error {
