@@ -136,8 +136,7 @@ func (db *DBRepo) do(task *entity.Task, action byte, actionID string) error {
 	if err != nil {
 		return err
 	}
-	return nil
-
+	
 	var count int64
 	err = db.DB.Model(&entity.Change{}).Distinct("action_id").Count(&count).Error
 	if err != nil {
