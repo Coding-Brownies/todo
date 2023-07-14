@@ -113,7 +113,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch {
 		case key.Matches(msg, m.keymap.Bin):
 			m.listBin = true
-			m.list.Title = "Bin"
+			m.list.Title = "🗑  Bin"
 			tasks, _ := m.repo.ListBin()
 			setList(tasks, &m.list)
 
@@ -231,14 +231,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	if m.editing {
 		return fmt.Sprintf(
-			"%s\n%s",
+			"\n✏️  Edit\n\n%s\n\n%s",
 			m.textInput.View(),
 			m.list.Help.ShortHelpView([]key.Binding{m.keymap.EditExit}),
 		) + "\n"
 	}
 	if m.listBin {
 		return fmt.Sprintf(
-			"%s\n%s",
+			"\n%s\n%s",
 			m.list.View(),
 			m.list.Help.ShortHelpView([]key.Binding{m.keymap.Quit, m.keymap.Bin, m.keymap.Restore, m.keymap.EmptyBin}),
 		) + "\n"
@@ -247,10 +247,10 @@ func (m model) View() string {
 	if m.bigHelp {
 		help = m.list.Help.FullHelpView(m.keymap.FullHelp())
 	}
-	return m.list.View() + m.list.Styles.HelpStyle.Render(help)
+	return "\n" + m.list.View() + m.list.Styles.HelpStyle.Render(help)
 }
 
-const DEFAULT_TITLE = "Tasks"
+const DEFAULT_TITLE = "📕 Tasks"
 
 func New(cfg *config.Config, repo internal.Repo) *model {
 
