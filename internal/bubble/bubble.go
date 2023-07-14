@@ -22,6 +22,7 @@ type model struct {
 	err       error
 	editing   bool
 	bigHelp   bool
+	listBin   bool
 	repo      internal.Repo
 }
 
@@ -55,6 +56,53 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	}
 
+	if m.listBin {
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			switch {
+			case key.Matches(msg, m.keymap.Bin):
+				m.listBin = false // false o !m.listBin
+				m.list.Title = DEFAULT_TITLE
+				tasks, _ := m.repo.List()
+				setList(tasks, &m.list)
+
+			case key.Matches(msg, m.keymap.Restore):
+				if i, ok := m.list.SelectedItem().(entity.Task); ok {
+					m.repo.Restore(&i)
+					tasks, _ := m.repo.ListBin()
+					setList(tasks, &m.list)
+				}
+
+			case key.Matches(msg, m.keymap.Up):
+				before := m.list.Index() - 1
+				if before < 0 {
+					before = 0
+				}
+				m.list.Select(before)
+
+			case key.Matches(msg, m.keymap.Down):
+				next := m.list.Index() + 1
+				if next > len(m.list.Items())-1 {
+					next = len(m.list.Items()) - 1
+				}
+				m.list.Select(next)
+
+			case key.Matches(msg, m.keymap.Quit):
+				return m, tea.Quit
+
+			case key.Matches(msg, m.keymap.EmptyBin):
+				m.repo.EmptyBin()
+				setList([]entity.Task{}, &m.list)
+			}
+
+		case error:
+			m.err = msg
+			return m, nil
+		}
+
+		return m, m.Init()
+	}
+
 	switch msg := msg.(type) {
 
 	case tea.WindowSizeMsg:
@@ -63,6 +111,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		switch {
+		case key.Matches(msg, m.keymap.Bin):
+			m.listBin = true
+			m.list.Title = "🗑  Bin"
+			tasks, _ := m.repo.ListBin()
+			setList(tasks, &m.list)
+
 		case key.Matches(msg, m.keymap.Help):
 			m.bigHelp = !m.bigHelp
 
@@ -153,14 +207,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.keymap.Undo):
 			m.repo.Undo()
 			tasks, _ := m.repo.List()
-			items := make([]list.Item, len(tasks))
-			for i, v := range tasks {
-				items[i] = v
-			}
-			m.list.SetItems(items)
-			if m.list.Index() > len(items)-1 {
-				m.list.Select(len(items) - 1)
-			}
+			setList(tasks, &m.list)
 
 		default:
 			cur, ok := m.list.SelectedItem().(entity.Task)
@@ -172,35 +219,38 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.editing = true
 			m.textInput.SetValue(msg.String())
-
 		}
-
 	// We handle errors just like any other message
 	case error:
 		m.err = msg
 		return m, nil
 	}
-
 	return m, m.Init()
 }
 
 func (m model) View() string {
 	if m.editing {
 		return fmt.Sprintf(
-			"\n%s\n\n%s",
+			"\n✏️  Edit\n\n%s\n\n%s",
 			m.textInput.View(),
 			m.list.Help.ShortHelpView([]key.Binding{m.keymap.EditExit}),
 		) + "\n"
 	}
-
+	if m.listBin {
+		return fmt.Sprintf(
+			"\n%s\n%s",
+			m.list.View(),
+			m.list.Help.ShortHelpView([]key.Binding{m.keymap.Quit, m.keymap.Bin, m.keymap.Restore, m.keymap.EmptyBin}),
+		) + "\n"
+	}
 	help := m.list.Help.ShortHelpView(m.keymap.ShortHelp())
 	if m.bigHelp {
 		help = m.list.Help.FullHelpView(m.keymap.FullHelp())
 	}
-
-	return m.list.View() +
-		m.list.Styles.HelpStyle.Render(help)
+	return "\n" + m.list.View() + m.list.Styles.HelpStyle.Render(help)
 }
+
+const DEFAULT_TITLE = "📕 Tasks"
 
 func New(cfg *config.Config, repo internal.Repo) *model {
 
@@ -221,7 +271,7 @@ func New(cfg *config.Config, repo internal.Repo) *model {
 	keyMap := NewKeyMap(cfg)
 
 	// build the list
-	l.Title = ""
+	l.Title = DEFAULT_TITLE
 	l.SetShowHelp(false)
 	l.SetShowStatusBar(false)
 	l.SetFilteringEnabled(false)

@@ -61,13 +61,14 @@ func (db *DBRepo) Add(t *entity.Task) error {
 }
 
 func (db *DBRepo) Delete(t *entity.Task) error {
+	// soft delete, per questo risulta come UPDATE
 	// Crea e registra l'azione delete nella tabella di registro delle modifiche Change
-	err := db.do(t, DELETE, uuid.NewString())
+	err := db.do(t, UPDATE, uuid.NewString())
 	if err != nil {
 		return err
 	}
 	// elimina il task
-	return db.DB.Where("id=?", t.ID).Delete(&entity.Task{}).Error
+	return db.DB.Where("id = ?", t.ID).Delete(&entity.Task{}).Error
 }
 
 func (db *DBRepo) Check(t *entity.Task) error {
@@ -116,7 +117,7 @@ func (db *DBRepo) Swap(taskA, taskB *entity.Task) error {
 	return nil
 }
 
-// funzione ausiliaria Do che accetta un task,
+// funzione ausiliaria che accetta un task,
 // ne esegue il marshalling e lo salva nelle tabella di registro delle modifiche Change
 func (db *DBRepo) do(task *entity.Task, action byte, actionID string) error {
 	// codifica del json come []byte usando Marshal
@@ -141,16 +142,18 @@ func (db *DBRepo) do(task *entity.Task, action byte, actionID string) error {
 	if err != nil {
 		return err
 	}
+
 	if count <= int64(db.historyLen) || db.historyLen == -1 {
 		return nil
 	}
+
 	var c entity.Change
 	err = db.DB.Order("id").First(&c).Error
 	if err != nil {
 		return err
 	}
-	return db.DB.Where("action_id = ?", c.ActionID).Delete(&entity.Change{}).Error
 
+	return db.DB.Where("action_id = ?", c.ActionID).Delete(&entity.Change{}).Error
 }
 
 func (db *DBRepo) Undo() error {
@@ -186,8 +189,11 @@ func (db *DBRepo) Undo() error {
 		// Effettua il revert dell'azione
 		switch change.Action {
 		case CREATE:
-			err = db.DB.Where("id=?", oldStatus.ID).Delete(&entity.Task{}).Error
-		case DELETE, UPDATE:
+			// Unscoped delete permanently
+			err = db.DB.Unscoped().Where("id = ?", oldStatus.ID).Delete(&entity.Task{}).Error
+		case DELETE:
+			err = db.DB.Unscoped().Where("id = ?", oldStatus.ID).Update("deleted_at", nil).Error
+		case UPDATE:
 			err = db.DB.Save(&oldStatus).Error
 		default:
 			err = errors.New("unsupported action")
@@ -197,4 +203,19 @@ func (db *DBRepo) Undo() error {
 		}
 	}
 	return nil
+}
+
+func (db *DBRepo) ListBin() ([]entity.Task, error) {
+	var res []entity.Task
+	err := db.DB.Unscoped().Where("deleted_at <> ?", "").Find(&res).Error
+	return res, err
+}
+
+func (db *DBRepo) Restore(task *entity.Task) error {
+	return db.DB.Unscoped().Model(&entity.Task{}).
+		Where("id = ?", task.ID).Update("deleted_at", nil).Error
+}
+
+func (db *DBRepo) EmptyBin() error {
+	return db.DB.Unscoped().Where("deleted_at <> ?", "").Delete(&entity.Task{}).Error
 }
