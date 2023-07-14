@@ -82,8 +82,6 @@ func TestSwap(t *testing.T) {
 		assert.NoError(t, err)
 	}
 
-	fmt.Println(tasks)
-
 	err = r.Swap(tasks[0], tasks[1])
 	assert.NoError(t, err)
 
@@ -101,8 +99,6 @@ func GetTaskStatusHash(r *dbrepo.DBRepo) (string, error) {
 		s += fmt.Sprint(t.Done) + "-" + t.Description + "-" + t.Position.String() + "|"
 	}
 	return s, nil
-	// res := sha256.Sum256([]byte(s))
-	// return fmt.Sprintf("%x", res), nil
 }
 
 func TestUndo(t *testing.T) {
@@ -192,4 +188,42 @@ func TestHistoryLen(t *testing.T) {
 		}
 		assert.Equal(t, statuses[index], status, i)
 	}
+}
+
+func TestBin(t *testing.T) {
+	t.Parallel()
+
+	r, err := dbrepo.New(":memory:", 2)
+	assert.NoError(t, err)
+
+	task := entity.Task{
+		Description: "ciaoo",
+	}
+
+	// create a task
+	err = r.Add(&task)
+	assert.Nil(t, err)
+
+	// delete a task
+	err = r.Delete(&task)
+	assert.Nil(t, err)
+
+	// now there shold be a task in the bin
+	res, err := r.ListBin()
+	assert.Nil(t, err)
+	assert.Len(t, res, 1)
+
+	// and no task in the tasks
+	res, err = r.List()
+	assert.Nil(t, err)
+	assert.Len(t, res, 0)
+
+	// empty the bin
+	err = r.EmptyBin()
+	assert.Nil(t, err)
+
+	// now the bin should be empty
+	res, err = r.ListBin()
+	assert.Nil(t, err)
+	assert.Len(t, res, 0)
 }

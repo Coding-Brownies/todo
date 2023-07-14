@@ -136,7 +136,7 @@ func (db *DBRepo) do(task *entity.Task, action byte, actionID string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	var count int64
 	err = db.DB.Model(&entity.Change{}).Distinct("action_id").Count(&count).Error
 	if err != nil {
@@ -207,8 +207,7 @@ func (db *DBRepo) Undo() error {
 
 func (db *DBRepo) ListBin() ([]entity.Task, error) {
 	var res []entity.Task
-	// You can find soft deleted records with Unscoped
-	err := db.DB.Unscoped().Where("deleted_at <> ?", nil).Find(&res).Error
+	err := db.DB.Unscoped().Where("deleted_at <> ?", "").Find(&res).Error
 	return res, err
 }
 
@@ -218,5 +217,5 @@ func (db *DBRepo) Restore(task *entity.Task) error {
 }
 
 func (db *DBRepo) EmptyBin() error {
-	return db.DB.Unscoped().Where("deleted_at <> ?", nil).Delete(&entity.Task{}).Error
+	return db.DB.Unscoped().Where("deleted_at <> ?", "").Delete(&entity.Task{}).Error
 }

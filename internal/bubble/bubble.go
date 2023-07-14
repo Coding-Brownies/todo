@@ -54,8 +54,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var cmd tea.Cmd
 		m.textInput, cmd = m.textInput.Update(msg)
 		return m, cmd
-
 	}
+
 	if m.listBin {
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
@@ -72,6 +72,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					tasks, _ := m.repo.ListBin()
 					setList(tasks, &m.list)
 				}
+
 			case key.Matches(msg, m.keymap.Up):
 				before := m.list.Index() - 1
 				if before < 0 {
@@ -85,6 +86,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					next = len(m.list.Items()) - 1
 				}
 				m.list.Select(next)
+
 			case key.Matches(msg, m.keymap.Quit):
 				return m, tea.Quit
 
@@ -110,7 +112,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, m.keymap.Bin):
-			m.listBin = true //!m.listBin o true
+			m.listBin = true
 			m.list.Title = "Bin"
 			tasks, _ := m.repo.ListBin()
 			setList(tasks, &m.list)
@@ -229,14 +231,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	if m.editing {
 		return fmt.Sprintf(
-			"\n%s\n\n%s",
+			"%s\n%s",
 			m.textInput.View(),
 			m.list.Help.ShortHelpView([]key.Binding{m.keymap.EditExit}),
 		) + "\n"
 	}
 	if m.listBin {
 		return fmt.Sprintf(
-			"\n%s\n\n%s",
+			"%s\n%s",
 			m.list.View(),
 			m.list.Help.ShortHelpView([]key.Binding{m.keymap.Quit, m.keymap.Bin, m.keymap.Restore, m.keymap.EmptyBin}),
 		) + "\n"

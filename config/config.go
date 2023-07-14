@@ -27,7 +27,7 @@ type (
 		Down     []string `yaml:"down" env-default:"down,k"`
 		Bin      []string `yaml:"bin" env-default:"ctrl+b"`
 		Restore  []string `yaml:"restore" env-default:"left"`
-		EmptyBin []string `yaml:"emptybin" env-default:"ctrl+backspace"`
+		EmptyBin []string `yaml:"emptybin" env-default:"c"`
 	}
 )
 
