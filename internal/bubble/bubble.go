@@ -6,19 +6,29 @@ import (
 	"github.com/Coding-Brownies/todo/internal/bubble/components/bin"
 	"github.com/Coding-Brownies/todo/internal/bubble/components/edit"
 	"github.com/Coding-Brownies/todo/internal/bubble/components/task"
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 var _ tea.Model = &model{}
 
+type ModelWithHelp interface {
+	tea.Model
+	help.KeyMap
+}
+
 type model struct {
-	repo internal.Repo
+	repo   internal.Repo
+	helper help.Model
 	// components
 	tasks *task.Model
 	bin   *bin.Model
-	edit  *edit.Model
 
-	cur tea.Model
+	// states
+	cur     ModelWithHelp
+	bigHelp bool
 }
 
 func (m model) Init() tea.Cmd {
@@ -26,18 +36,22 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	return nil, nil
+
+	return m.cur.Update(msg)
 }
 
 func (m model) View() string {
+	view := "\n" + m.cur.View()
+	help := m.helper.ShortHelpView(m.cur.ShortHelp())
 
-	return m.cur.View()
+	if m.bigHelp {
+		help = m.helper.FullHelpView(m.cur.FullHelp())
+	}
 
-	// help := m.list.Help.ShortHelpView(m.keymap.ShortHelp())
-	// if m.bigHelp {
-	// 	help = m.list.Help.FullHelpView(m.keymap.FullHelp())
-	// }
-	// return "\n" + m.list.View() + m.list.Styles.HelpStyle.Render(help)
+	return view +
+		list.DefaultStyles().
+			HelpStyle.PaddingLeft(2).
+			Foreground(lipgloss.Color("#000000")).Render(help)
 }
 
 func New(cfg *config.Config, repo internal.Repo) *model {
@@ -45,6 +59,7 @@ func New(cfg *config.Config, repo internal.Repo) *model {
 	keyMap := NewKeyMap(cfg)
 
 	return &model{
+		repo: repo,
 		tasks: task.NewModel(
 			task.KeyMap{
 				Check:    keyMap.Check,

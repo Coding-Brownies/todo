@@ -40,7 +40,6 @@ func NewModel(k KeyMap, r internal.Repo, e Editor) *Model {
 	l.SetFilteringEnabled(false)
 	l.Styles.Title = lipgloss.NewStyle().Height(0).Margin(0, 0, 0, 0).Padding(0, 0, 0, 0)
 	l.Styles.PaginationStyle = list.DefaultStyles().PaginationStyle.PaddingLeft(5)
-	l.Styles.HelpStyle = list.DefaultStyles().HelpStyle.PaddingLeft(2).Foreground(lipgloss.Color("#000000"))
 
 	return &Model{
 		keymap: k,
@@ -153,13 +152,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, m.keymap.Edit):
 			if i, ok := m.SelectedItem().(entity.Task); ok {
+
 				res, _ := m.editor.Edit(i.Description)
 
-				// TODO add a check on max len
 				m.repo.Edit(&i, res)
 				m.SetItem(m.Index(), i)
 			}
-
+			return m, tea.Quit
 		}
 
 	}
