@@ -4,12 +4,9 @@ import (
 	"strings"
 
 	"github.com/Coding-Brownies/todo/config"
-	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"golang.org/x/exp/slices"
 )
-
-var _ help.KeyMap = &KeyMap{}
 
 type KeyMap struct {
 	Check    key.Binding
@@ -27,40 +24,6 @@ type KeyMap struct {
 	Bin      key.Binding
 	Restore  key.Binding
 	EmptyBin key.Binding
-}
-
-// FullHelp implements help.KeyMap.
-func (k *KeyMap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{
-		{
-			k.Quit,
-			k.Insert,
-			k.Remove,
-			k.Check,
-		},
-		{
-			k.SwapUp,
-			k.SwapDown,
-			k.Up,
-			k.Down,
-		},
-		{
-			k.Edit,
-			k.Undo,
-			k.Bin,
-			k.Help,
-		},
-	}
-}
-
-// ShortHelp implements help.KeyMap.
-func (k *KeyMap) ShortHelp() []key.Binding {
-	return []key.Binding{
-		k.Quit,
-		k.Insert,
-		k.Remove,
-		k.Help,
-	}
 }
 
 func replaceSymbols(inputs []string) string {

@@ -27,7 +27,6 @@ type DBRepo struct {
 
 func New(dbpath string, historyLen int) (*DBRepo, error) {
 	db, err := gorm.Open(sqlite.Open(dbpath), &gorm.Config{
-		//TODO: silent only record not found
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	if err != nil {

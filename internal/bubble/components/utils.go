@@ -1,11 +1,11 @@
-package bubble
+package components
 
 import (
 	"github.com/Coding-Brownies/todo/internal/entity"
 	"github.com/charmbracelet/bubbles/list"
 )
 
-func setList(tasks []entity.Task, l *list.Model) {
+func SetList(tasks []entity.Task, l *list.Model) {
 	items := make([]list.Item, len(tasks))
 	for i, v := range tasks {
 		items[i] = v

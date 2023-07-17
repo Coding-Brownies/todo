@@ -75,14 +75,8 @@ func (a *App) Run(cmd string, args ...string) error {
 		if len(args) != 0 {
 			return errors.New("live accept no argument")
 		}
-		tasks, err := a.repo.List()
-		if err != nil {
-			return err
-		}
-
 		b := bubble.New(a.cfg, a.repo)
-		return b.Run(tasks)
-
+		return b.Run()
 	}
 
 	return errors.New("command not found")

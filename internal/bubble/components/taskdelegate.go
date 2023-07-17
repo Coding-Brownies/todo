@@ -1,4 +1,4 @@
-package bubble
+package components
 
 import (
 	"fmt"
@@ -17,12 +17,12 @@ var (
 )
 
 // this struct is responsible for the rendering of an item inside the list
-type customItemRender struct{}
+type CustomItemRender struct{}
 
-func (d customItemRender) Height() int                               { return 1 }
-func (d customItemRender) Spacing() int                              { return 0 }
-func (d customItemRender) Update(msg tea.Msg, m *list.Model) tea.Cmd { return nil }
-func (d customItemRender) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
+func (d CustomItemRender) Height() int                               { return 1 }
+func (d CustomItemRender) Spacing() int                              { return 0 }
+func (d CustomItemRender) Update(msg tea.Msg, m *list.Model) tea.Cmd { return nil }
+func (d CustomItemRender) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
 	i, ok := listItem.(entity.Task)
 	if !ok {
 		return
