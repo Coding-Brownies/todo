@@ -16,6 +16,7 @@ type KeyMap struct {
 	Up       key.Binding
 	Down     key.Binding
 	Edit     key.Binding
+	EditExit key.Binding
 }
 
 // FullHelp implements help.KeyMap.
@@ -32,6 +33,9 @@ func (k *KeyMap) FullHelp() [][]key.Binding {
 			k.Up,
 			k.Edit,
 			k.Down,
+		},
+		{
+			k.EditExit,
 		},
 	}
 }

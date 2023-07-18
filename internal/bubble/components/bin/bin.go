@@ -22,6 +22,11 @@ type Model struct {
 	err    error
 }
 
+// IsLocked implements bubble.BubbleModel.
+func (*Model) IsLocked() bool {
+	return false
+}
+
 func (m *Model) Map() help.KeyMap {
 	return m.keymap
 }
@@ -63,16 +68,14 @@ func (m *Model) Fill(tasks ...entity.Task) {
 
 // Init implements tea.Model.
 func (m *Model) Init() tea.Cmd {
-	return func() tea.Msg {
-		tasks, err := m.repo.ListBin()
-
-		if err != nil {
+	tasks, err := m.repo.ListBin()
+	if err != nil {
+		return func() tea.Msg {
 			return err
 		}
-
-		m.Fill(tasks...)
-		return nil
 	}
+	m.Fill(tasks...)
+	return nil
 }
 
 // Update implements tea.Model.

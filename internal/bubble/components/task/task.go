@@ -4,11 +4,11 @@ import (
 	"github.com/Coding-Brownies/todo/internal"
 	"github.com/Coding-Brownies/todo/internal/bubble"
 	"github.com/Coding-Brownies/todo/internal/bubble/components"
-	"github.com/Coding-Brownies/todo/internal/bubble/components/snorkel"
 	"github.com/Coding-Brownies/todo/internal/entity"
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -19,19 +19,20 @@ type EditFinished struct {
 	Content string
 }
 
-type Editor interface {
-	Edit(string) tea.Cmd
-}
-
 type Model struct {
 	list.Model
 
-	editor  Editor
-	editing bool
+	input   *textinput.Model
+	editing *bool
 
 	keymap *KeyMap
 	repo   internal.Repo
 	err    error
+}
+
+// IsLocked implements bubble.BubbleModel.
+func (m *Model) IsLocked() bool {
+	return *m.editing
 }
 
 func (m *Model) Map() help.KeyMap {
@@ -43,15 +44,24 @@ func (m *Model) Error() error {
 	return m.err
 }
 
-func NewModel(k *KeyMap, r internal.Repo, e Editor) *Model {
+func NewModel(k *KeyMap, r internal.Repo) *Model {
+	ti := textinput.New()
+	ti.Placeholder = "Task..."
+	ti.CharLimit = 50
+	ti.Width = 50
+	ti.Prompt = ""
+
+	editing := false
 	l := list.New(
 		[]list.Item{},
-		components.CustomItemRender{},
-		20,
+		components.CustomItemRender{
+			Editor:  &ti,
+			Editing: &editing,
+		},
+		50,
 		10,
 	)
 
-	l.Title = "📕 Tasks"
 	l.SetShowHelp(false)
 	l.SetShowStatusBar(false)
 	l.SetFilteringEnabled(false)
@@ -59,11 +69,23 @@ func NewModel(k *KeyMap, r internal.Repo, e Editor) *Model {
 	l.Styles.PaginationStyle = list.DefaultStyles().PaginationStyle.PaddingLeft(5)
 
 	return &Model{
-		keymap: k,
-		Model:  l,
-		repo:   r,
-		editor: e,
+		keymap:  k,
+		Model:   l,
+		repo:    r,
+		input:   &ti,
+		editing: &editing,
 	}
+}
+
+func (m *Model) View() string {
+
+	if *m.editing {
+		m.Title = "🖊️  Tasks"
+	} else {
+		m.Title = "📕 Tasks"
+	}
+
+	return m.Model.View()
 }
 
 func (m *Model) Fill(tasks ...entity.Task) {
@@ -75,29 +97,42 @@ func (m *Model) Fill(tasks ...entity.Task) {
 }
 
 func (m *Model) Init() tea.Cmd {
-	return func() tea.Msg {
-		snorkel.Log("lolzone")
-
-		tasks, err := m.repo.List()
-
-		if err != nil {
+	m.input.Focus()
+	tasks, err := m.repo.List()
+	if err != nil {
+		return func() tea.Msg {
 			return err
 		}
-		m.Fill(tasks...)
-		return nil
 	}
+	m.Fill(tasks...)
+	return nil
 }
 
+type editFinished struct{}
+
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if m.editing {
-		return m, nil
+	if *m.editing {
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			switch {
+			case msg.String() == "left" && m.input.Position() == 0,
+				key.Matches(msg, m.keymap.EditExit),
+				msg.String() == "enter":
+				*m.editing = false
+				return m.Update(editFinished{})
+			}
+		}
+
+		var cmd tea.Cmd
+		*m.input, cmd = m.input.Update(msg)
+		return m, cmd
 	}
 
 	switch msg := msg.(type) {
 
 	case EditFinished:
 		if i, ok := m.SelectedItem().(entity.Task); ok {
-			m.editing = false
+			*m.editing = false
 			m.repo.Edit(&i, msg.Content)
 		}
 
@@ -180,20 +215,33 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.RemoveItem(m.Index())
 			// if the index is out of bound set it back
-			if m.Index() == len(m.Items()) {
+			if m.Index() != 0 {
 				m.Select(m.Index() - 1)
 			}
 
 		case key.Matches(msg, m.keymap.Edit):
 			if i, ok := m.SelectedItem().(entity.Task); ok {
-				m.editing = true
-				return m, tea.Batch(
-					tea.HideCursor,
-					m.editor.Edit(i.Description),
-				)
+				m.input.Focus()
+				*m.editing = true
+				m.input.SetValue(i.Description)
+				m.input.SetCursor(0)
+				return m, textinput.Blink
+			}
+		default:
+			if i, ok := m.SelectedItem().(entity.Task); ok {
+				if i.Description == "" {
+					*m.editing = true
+					m.input.SetValue(string(msg.Runes))
+					m.input.SetCursor(len(m.input.Value()))
+					return m, textinput.Blink
+				}
 			}
 		}
-
+	case editFinished:
+		if i, ok := m.SelectedItem().(entity.Task); ok {
+			m.repo.Edit(&i, m.input.Value())
+			m.Model.SetItem(m.Index(), i)
+		}
 	}
 
 	return m, m.Init()

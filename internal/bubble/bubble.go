@@ -3,6 +3,7 @@ package bubble
 import (
 	"github.com/Coding-Brownies/todo/config"
 	"github.com/Coding-Brownies/todo/internal"
+	"github.com/Coding-Brownies/todo/internal/bubble/components/snorkel"
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
@@ -16,6 +17,7 @@ type BubbleModel interface {
 	tea.Model
 	Map() help.KeyMap
 	Error() error
+	IsLocked() bool
 }
 
 type editFinished struct{}
@@ -37,29 +39,36 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
+	cur := m.models[m.cur]
 
-	case editFinished:
-		return m, tea.Quit
+	if !cur.IsLocked() {
+		switch msg := msg.(type) {
 
-	case tea.KeyMsg:
-		switch {
-		case key.Matches(msg, m.keymap.Bin):
-			m.cur = (m.cur + 1) % len(m.models)
-			return m, m.Init()
-
-		case key.Matches(msg, m.keymap.Help):
-			m.help.ShowAll = !m.help.ShowAll
-			return m, nil
-
-		case key.Matches(msg, m.keymap.Quit):
+		case editFinished:
 			return m, tea.Quit
-		}
 
-	// We handle errors just like any other message
-	case error:
-		m.err = msg
-		return m, nil
+		case tea.KeyMsg:
+			switch {
+			case key.Matches(msg, m.keymap.Cycle):
+				m.cur = (m.cur + 1) % len(m.models)
+				return m, m.Init()
+			case key.Matches(msg, m.keymap.Undo):
+				m.repo.Undo()
+				return m, m.Init()
+
+			case key.Matches(msg, m.keymap.Help):
+				m.help.ShowAll = !m.help.ShowAll
+				return m, nil
+
+			case key.Matches(msg, m.keymap.Quit):
+				return m, tea.Quit
+			}
+
+		// We handle errors just like any other message
+		case error:
+			m.err = msg
+			return m, nil
+		}
 	}
 
 	_, cmd := m.models[m.cur].Update(msg)
@@ -69,6 +78,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	cur := m.models[m.cur]
+	snorkel.Log(cur)
 	view := cur.View()
 
 	h := m.help.View(cur.Map())
