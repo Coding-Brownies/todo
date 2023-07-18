@@ -9,7 +9,6 @@ var _ help.KeyMap = &KeyMap{}
 
 type KeyMap struct {
 	Check    key.Binding
-	Quit     key.Binding
 	SwapUp   key.Binding
 	SwapDown key.Binding
 	Remove   key.Binding
@@ -20,11 +19,30 @@ type KeyMap struct {
 }
 
 // FullHelp implements help.KeyMap.
-func (*KeyMap) FullHelp() [][]key.Binding {
-	panic("unimplemented")
+func (k *KeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{
+			k.Insert,
+			k.Remove,
+			k.Check,
+			k.SwapUp,
+		},
+		{
+			k.SwapDown,
+			k.Up,
+			k.Edit,
+			k.Down,
+		},
+	}
 }
 
 // ShortHelp implements help.KeyMap.
-func (*KeyMap) ShortHelp() []key.Binding {
-	panic("unimplemented")
+func (k *KeyMap) ShortHelp() []key.Binding {
+	return []key.Binding{
+		k.Insert,
+		k.Remove,
+		k.Up,
+		k.Edit,
+		k.Down,
+	}
 }

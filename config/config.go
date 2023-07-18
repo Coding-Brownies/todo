@@ -25,7 +25,7 @@ type (
 		Undo     []string `yaml:"undo" env-default:"ctrl+z"`
 		Up       []string `yaml:"up" env-default:"up,j"`
 		Down     []string `yaml:"down" env-default:"down,k"`
-		Bin      []string `yaml:"bin" env-default:"ctrl+b"`
+		Cycle    []string `yaml:"cycle" env-default:"ctrl+b"`
 		Restore  []string `yaml:"restore" env-default:"left"`
 		EmptyBin []string `yaml:"emptybin" env-default:"c"`
 	}

@@ -1,45 +1,57 @@
 package edit
 
 import (
-	"errors"
 	"fmt"
 
-	"github.com/Coding-Brownies/todo/internal"
+	"github.com/Coding-Brownies/todo/internal/bubble"
 	"github.com/Coding-Brownies/todo/internal/bubble/components/task"
+	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-var _ tea.Model = &Model{}
+var _ bubble.BubbleModel = &Model{}
 var _ task.Editor = &Model{}
 
 type Model struct {
 	textarea.Model
 
-	keymap KeyMap
-	Error  error
+	keymap *KeyMap
+	err    error
 	Res    string
 }
 
-// Edit implements task.Editor.
-func (m *Model) Edit(string) (string, error) {
-
-	pg := tea.NewProgram(m)
-	resultModel, err := pg.Run()
-	if err != nil {
-		return "", err
-	}
-
-	if model, ok := resultModel.(Model); ok {
-		return model.Value(), nil
-	}
-
-	// TODO: make this better
-	return "", errors.New("boh")
+func (m *Model) Map() help.KeyMap {
+	return m.keymap
 }
 
-func NewModel(k KeyMap, r internal.Repo) *Model {
+// Error implements bubble.BubbleModel.
+func (m *Model) Error() error {
+	return m.err
+}
+
+// Edit implements task.Editor.
+func (m *Model) Edit(string) tea.Cmd {
+	return func() tea.Msg {
+
+		pg := tea.NewProgram(m)
+		res, err := pg.Run()
+		if err != nil {
+			return err
+		}
+
+		if text, ok := res.(Model); ok {
+			return task.EditFinished{
+				Content: text.Value(),
+			}
+		}
+
+		return nil
+	}
+}
+
+func NewModel(k *KeyMap) *Model {
 	ta := textarea.New()
 	ta.Placeholder = "Something todo..."
 	ta.Focus()
@@ -65,7 +77,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 	case error:
-		m.Error = msg
+		m.err = msg
 		return m, nil
 	}
 

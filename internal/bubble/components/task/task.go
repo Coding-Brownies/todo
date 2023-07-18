@@ -2,31 +2,48 @@ package task
 
 import (
 	"github.com/Coding-Brownies/todo/internal"
+	"github.com/Coding-Brownies/todo/internal/bubble"
 	"github.com/Coding-Brownies/todo/internal/bubble/components"
+	"github.com/Coding-Brownies/todo/internal/bubble/components/snorkel"
 	"github.com/Coding-Brownies/todo/internal/entity"
+	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
-var _ tea.Model = &Model{}
+var _ bubble.BubbleModel = &Model{}
+
+type EditFinished struct {
+	Content string
+}
 
 type Editor interface {
-	Edit(string) (string, error)
+	Edit(string) tea.Cmd
 }
 
 type Model struct {
 	list.Model
 
-	editor Editor
+	editor  Editor
+	editing bool
 
-	keymap KeyMap
+	keymap *KeyMap
 	repo   internal.Repo
-	Error  error
+	err    error
 }
 
-func NewModel(k KeyMap, r internal.Repo, e Editor) *Model {
+func (m *Model) Map() help.KeyMap {
+	return m.keymap
+}
+
+// Error implements bubble.BubbleModel.
+func (m *Model) Error() error {
+	return m.err
+}
+
+func NewModel(k *KeyMap, r internal.Repo, e Editor) *Model {
 	l := list.New(
 		[]list.Item{},
 		components.CustomItemRender{},
@@ -38,7 +55,7 @@ func NewModel(k KeyMap, r internal.Repo, e Editor) *Model {
 	l.SetShowHelp(false)
 	l.SetShowStatusBar(false)
 	l.SetFilteringEnabled(false)
-	l.Styles.Title = lipgloss.NewStyle().Height(0).Margin(0, 0, 0, 0).Padding(0, 0, 0, 0)
+	l.Styles.Title = lipgloss.NewStyle().Height(0).Margin(0, 0, 0, 0).Padding(1, 0, 0, 0)
 	l.Styles.PaginationStyle = list.DefaultStyles().PaginationStyle.PaddingLeft(5)
 
 	return &Model{
@@ -49,7 +66,7 @@ func NewModel(k KeyMap, r internal.Repo, e Editor) *Model {
 	}
 }
 
-func (m Model) Fill(tasks ...entity.Task) {
+func (m *Model) Fill(tasks ...entity.Task) {
 	items := make([]list.Item, len(tasks))
 	for i, v := range tasks {
 		items[i] = v
@@ -57,19 +74,39 @@ func (m Model) Fill(tasks ...entity.Task) {
 	m.SetItems(items)
 }
 
-func (m Model) Init() tea.Cmd {
-	return nil
+func (m *Model) Init() tea.Cmd {
+	return func() tea.Msg {
+		snorkel.Log("lolzone")
+
+		tasks, err := m.repo.List()
+
+		if err != nil {
+			return err
+		}
+		m.Fill(tasks...)
+		return nil
+	}
 }
 
-func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if m.editing {
+		return m, nil
+	}
+
 	switch msg := msg.(type) {
+
+	case EditFinished:
+		if i, ok := m.SelectedItem().(entity.Task); ok {
+			m.editing = false
+			m.repo.Edit(&i, msg.Content)
+		}
 
 	case tea.WindowSizeMsg:
 		m.SetWidth(msg.Width)
 		return m, nil
 
 	case error:
-		m.Error = msg
+		m.err = msg
 		return m, nil
 
 	case tea.KeyMsg:
@@ -87,9 +124,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				next = len(m.Items()) - 1
 			}
 			m.Select(next)
-
-		case key.Matches(msg, m.keymap.Quit):
-			return m, tea.Quit
 
 		case key.Matches(msg, m.keymap.Check):
 			if i, ok := m.SelectedItem().(entity.Task); ok {
@@ -152,15 +186,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, m.keymap.Edit):
 			if i, ok := m.SelectedItem().(entity.Task); ok {
-
-				res, _ := m.editor.Edit(i.Description)
-
-				m.repo.Edit(&i, res)
-				m.SetItem(m.Index(), i)
+				m.editing = true
+				return m, tea.Batch(
+					tea.HideCursor,
+					m.editor.Edit(i.Description),
+				)
 			}
-			return m, tea.Quit
 		}
 
 	}
+
 	return m, m.Init()
 }

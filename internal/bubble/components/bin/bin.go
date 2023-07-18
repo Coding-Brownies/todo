@@ -2,25 +2,36 @@ package bin
 
 import (
 	"github.com/Coding-Brownies/todo/internal"
+	"github.com/Coding-Brownies/todo/internal/bubble"
 	"github.com/Coding-Brownies/todo/internal/bubble/components"
 	"github.com/Coding-Brownies/todo/internal/entity"
+	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
-var _ tea.Model = &Model{}
+var _ bubble.BubbleModel = &Model{}
 
 type Model struct {
 	list.Model
 
-	keymap KeyMap
+	keymap *KeyMap
 	repo   internal.Repo
-	Error  error
+	err    error
 }
 
-func NewModel(k KeyMap, r internal.Repo) *Model {
+func (m *Model) Map() help.KeyMap {
+	return m.keymap
+}
+
+// Error implements bubble.BubbleModel.
+func (m *Model) Error() error {
+	return m.err
+}
+
+func NewModel(k *KeyMap, r internal.Repo) *Model {
 	l := list.New(
 		[]list.Item{},
 		components.CustomItemRender{},
@@ -28,13 +39,12 @@ func NewModel(k KeyMap, r internal.Repo) *Model {
 		10,
 	)
 
-	l.Title = "🗑 Bin"
+	l.Title = "🗑  Bin"
 	l.SetShowHelp(false)
 	l.SetShowStatusBar(false)
 	l.SetFilteringEnabled(false)
-	l.Styles.Title = lipgloss.NewStyle().Height(0).Margin(0, 0, 0, 0).Padding(0, 0, 0, 0)
+	l.Styles.Title = lipgloss.NewStyle().Height(0).Margin(0, 0, 0, 0).Padding(1, 0, 0, 0)
 	l.Styles.PaginationStyle = list.DefaultStyles().PaginationStyle.PaddingLeft(5)
-	l.Styles.HelpStyle = list.DefaultStyles().HelpStyle.PaddingLeft(2).Foreground(lipgloss.Color("#000000"))
 
 	return &Model{
 		keymap: k,
@@ -43,9 +53,26 @@ func NewModel(k KeyMap, r internal.Repo) *Model {
 	}
 }
 
+func (m *Model) Fill(tasks ...entity.Task) {
+	items := make([]list.Item, len(tasks))
+	for i, v := range tasks {
+		items[i] = v
+	}
+	m.SetItems(items)
+}
+
 // Init implements tea.Model.
 func (m *Model) Init() tea.Cmd {
-	return nil
+	return func() tea.Msg {
+		tasks, err := m.repo.ListBin()
+
+		if err != nil {
+			return err
+		}
+
+		m.Fill(tasks...)
+		return nil
+	}
 }
 
 // Update implements tea.Model.
@@ -58,7 +85,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if i, ok := m.SelectedItem().(entity.Task); ok {
 				m.repo.Restore(&i)
 				tasks, _ := m.repo.ListBin()
-				components.SetList(tasks, &m.Model)
+				m.Fill(tasks...)
 			}
 
 		case key.Matches(msg, m.keymap.Up):
@@ -77,13 +104,13 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, m.keymap.EmptyBin):
 			m.repo.EmptyBin()
-			components.SetList([]entity.Task{}, &m.Model)
+			m.Fill()
 		}
 
 	case error:
-		m.Error = msg
+		m.err = msg
 		return m, nil
 	}
 
-	return m, m.Init()
+	return m, nil
 }

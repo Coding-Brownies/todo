@@ -3,10 +3,8 @@ package bubble
 import (
 	"github.com/Coding-Brownies/todo/config"
 	"github.com/Coding-Brownies/todo/internal"
-	"github.com/Coding-Brownies/todo/internal/bubble/components/bin"
-	"github.com/Coding-Brownies/todo/internal/bubble/components/edit"
-	"github.com/Coding-Brownies/todo/internal/bubble/components/task"
 	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -14,93 +12,86 @@ import (
 
 var _ tea.Model = &model{}
 
-type ModelWithHelp interface {
+type BubbleModel interface {
 	tea.Model
-	help.KeyMap
+	Map() help.KeyMap
+	Error() error
 }
+
+type editFinished struct{}
 
 type model struct {
 	repo   internal.Repo
-	helper help.Model
-	// components
-	tasks *task.Model
-	bin   *bin.Model
+	keymap *KeyMap
+	err    error
 
-	// states
-	cur     ModelWithHelp
-	bigHelp bool
+	help help.Model
+
+	// components
+	cur    int
+	models []BubbleModel
 }
 
 func (m model) Init() tea.Cmd {
-	return nil
+	return m.models[m.cur].Init()
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
 
-	return m.cur.Update(msg)
+	case editFinished:
+		return m, tea.Quit
+
+	case tea.KeyMsg:
+		switch {
+		case key.Matches(msg, m.keymap.Bin):
+			m.cur = (m.cur + 1) % len(m.models)
+			return m, m.Init()
+
+		case key.Matches(msg, m.keymap.Help):
+			m.help.ShowAll = !m.help.ShowAll
+			return m, nil
+
+		case key.Matches(msg, m.keymap.Quit):
+			return m, tea.Quit
+		}
+
+	// We handle errors just like any other message
+	case error:
+		m.err = msg
+		return m, nil
+	}
+
+	_, cmd := m.models[m.cur].Update(msg)
+
+	return m, cmd
 }
 
 func (m model) View() string {
-	view := "\n" + m.cur.View()
-	help := m.helper.ShortHelpView(m.cur.ShortHelp())
+	cur := m.models[m.cur]
+	view := cur.View()
 
-	if m.bigHelp {
-		help = m.helper.FullHelpView(m.cur.FullHelp())
-	}
+	h := m.help.View(cur.Map())
 
-	return view +
+	return view + "\n" +
 		list.DefaultStyles().
 			HelpStyle.PaddingLeft(2).
-			Foreground(lipgloss.Color("#000000")).Render(help)
+			Foreground(lipgloss.Color("#000000")).Render(h)
 }
 
-func New(cfg *config.Config, repo internal.Repo) *model {
-
-	keyMap := NewKeyMap(cfg)
-
-	return &model{
-		repo: repo,
-		tasks: task.NewModel(
-			task.KeyMap{
-				Check:    keyMap.Check,
-				Quit:     keyMap.Quit,
-				SwapUp:   keyMap.SwapUp,
-				SwapDown: keyMap.SwapDown,
-				Remove:   keyMap.Remove,
-				Insert:   keyMap.Insert,
-				Up:       keyMap.Up,
-				Down:     keyMap.Down,
-			},
-			repo,
-			edit.NewModel(
-				edit.KeyMap{
-					Exit: keyMap.EditExit,
-				},
-				repo,
-			),
-		),
-		bin: bin.NewModel(
-			bin.KeyMap{
-				Up:       keyMap.Up,
-				Down:     keyMap.Down,
-				Restore:  keyMap.Restore,
-				EmptyBin: keyMap.EmptyBin,
-			},
-			repo,
-		),
+func New(cfg *config.Config, repo internal.Repo, keyMap *KeyMap, models ...BubbleModel) *model {
+	m := &model{
+		keymap: keyMap,
+		repo:   repo,
+		models: models,
+		help:   help.New(),
 	}
+	return m
 }
 
 func (m *model) Run() error {
-	tasks, err := m.repo.List()
-	if err != nil {
-		return err
-	}
-	m.tasks.Fill(tasks...)
-	m.cur = m.tasks
-
 	pg := tea.NewProgram(m)
-	_, err = pg.Run()
+	_, err := pg.Run()
 	if err != nil {
 		return err
 	}

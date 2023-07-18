@@ -15,11 +15,19 @@ type KeyMap struct {
 }
 
 // FullHelp implements help.KeyMap.
-func (*KeyMap) FullHelp() [][]key.Binding {
-	panic("unimplemented")
+func (k *KeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{
+			k.Restore,
+			k.EmptyBin,
+		},
+	}
 }
 
 // ShortHelp implements help.KeyMap.
-func (*KeyMap) ShortHelp() []key.Binding {
-	panic("unimplemented")
+func (k *KeyMap) ShortHelp() []key.Binding {
+	return []key.Binding{
+		k.Restore,
+		k.EmptyBin,
+	}
 }

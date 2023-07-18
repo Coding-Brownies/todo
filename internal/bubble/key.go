@@ -105,8 +105,8 @@ func NewKeyMap(cfg *config.Config) *KeyMap {
 			key.WithHelp(replaceSymbols(cfg.Undo), "undo"),
 		),
 		Bin: key.NewBinding(
-			WithKeys(cfg.Bin...),
-			key.WithHelp(replaceSymbols(cfg.Bin), "toggle bin"),
+			WithKeys(cfg.Cycle...),
+			key.WithHelp(replaceSymbols(cfg.Cycle), "toggle bin"),
 		),
 		Restore: key.NewBinding(
 			WithKeys(cfg.Restore...),
