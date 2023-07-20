@@ -72,3 +72,21 @@ func WithKeys(keys ...string) key.BindingOpt {
 		b.SetKeys(keys...)
 	}
 }
+
+// FullHelp implements help.KeyMap.
+func (m *model) FullHelp() []key.Binding {
+	return []key.Binding{
+		m.keymap.Cycle,
+		m.keymap.Help,
+		m.keymap.Quit,
+		m.keymap.Undo,
+	}
+}
+
+// ShortHelp implements help.KeyMap.
+func (m *model) ShortHelp() []key.Binding {
+	return []key.Binding{
+		m.keymap.Quit,
+		m.keymap.Help,
+	}
+}

@@ -15,7 +15,9 @@ var _ tea.Model = &model{}
 
 type BubbleModel interface {
 	tea.Model
-	Map() help.KeyMap
+
+	ShortHelp() []key.Binding
+	FullHelp() []key.Binding
 	Error() error
 	IsLocked() bool
 }
@@ -34,11 +36,11 @@ type model struct {
 	models []BubbleModel
 }
 
-func (m model) Init() tea.Cmd {
+func (m *model) Init() tea.Cmd {
 	return m.models[m.cur].Init()
 }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cur := m.models[m.cur]
 
 	if !cur.IsLocked() {
@@ -76,12 +78,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m model) View() string {
+func (m *model) View() string {
 	cur := m.models[m.cur]
 	snorkel.Log(cur)
 	view := cur.View()
 
-	h := m.help.View(cur.Map())
+	h := ""
+	if m.help.ShowAll {
+		h = m.help.FullHelpView([][]key.Binding{m.FullHelp(), cur.FullHelp()})
+	} else {
+		if cur.IsLocked() {
+			h = m.help.ShortHelpView(cur.ShortHelp())
+		} else {
+			h = m.help.ShortHelpView(append(cur.ShortHelp(), m.ShortHelp()...))
+		}
+	}
 
 	return view + "\n" +
 		list.DefaultStyles().

@@ -5,7 +5,6 @@ import (
 	"github.com/Coding-Brownies/todo/internal/bubble"
 	"github.com/Coding-Brownies/todo/internal/bubble/components"
 	"github.com/Coding-Brownies/todo/internal/entity"
-	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -33,10 +32,6 @@ type Model struct {
 // IsLocked implements bubble.BubbleModel.
 func (m *Model) IsLocked() bool {
 	return *m.editing
-}
-
-func (m *Model) Map() help.KeyMap {
-	return m.keymap
 }
 
 // Error implements bubble.BubbleModel.
@@ -116,8 +111,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyMsg:
 			switch {
 			case msg.String() == "left" && m.input.Position() == 0,
-				key.Matches(msg, m.keymap.EditExit),
-				msg.String() == "enter":
+				key.Matches(msg, m.keymap.EditExit):
 				*m.editing = false
 				return m.Update(editFinished{})
 			}
@@ -228,6 +222,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, textinput.Blink
 			}
 		default:
+			if len(msg.Runes) == 0 {
+				break
+			}
+
 			if i, ok := m.SelectedItem().(entity.Task); ok {
 				if i.Description == "" {
 					*m.editing = true

@@ -5,7 +5,6 @@ import (
 	"github.com/Coding-Brownies/todo/internal/bubble"
 	"github.com/Coding-Brownies/todo/internal/bubble/components"
 	"github.com/Coding-Brownies/todo/internal/entity"
-	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -25,10 +24,6 @@ type Model struct {
 // IsLocked implements bubble.BubbleModel.
 func (*Model) IsLocked() bool {
 	return false
-}
-
-func (m *Model) Map() help.KeyMap {
-	return m.keymap
 }
 
 // Error implements bubble.BubbleModel.

@@ -1,11 +1,8 @@
 package bin
 
 import (
-	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 )
-
-var _ help.KeyMap = &KeyMap{}
 
 type KeyMap struct {
 	Up       key.Binding
@@ -15,19 +12,19 @@ type KeyMap struct {
 }
 
 // FullHelp implements help.KeyMap.
-func (k *KeyMap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{
-		{
-			k.Restore,
-			k.EmptyBin,
-		},
+func (m *Model) FullHelp() []key.Binding {
+	return []key.Binding{
+		m.keymap.Up,
+		m.keymap.Down,
+		m.keymap.Restore,
+		m.keymap.EmptyBin,
 	}
 }
 
 // ShortHelp implements help.KeyMap.
-func (k *KeyMap) ShortHelp() []key.Binding {
+func (m *Model) ShortHelp() []key.Binding {
 	return []key.Binding{
-		k.Restore,
-		k.EmptyBin,
+		m.keymap.Restore,
+		m.keymap.EmptyBin,
 	}
 }

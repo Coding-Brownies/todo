@@ -1,11 +1,8 @@
 package task
 
 import (
-	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 )
-
-var _ help.KeyMap = &KeyMap{}
 
 type KeyMap struct {
 	Check    key.Binding
@@ -20,33 +17,35 @@ type KeyMap struct {
 }
 
 // FullHelp implements help.KeyMap.
-func (k *KeyMap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{
-		{
-			k.Insert,
-			k.Remove,
-			k.Check,
-			k.SwapUp,
-		},
-		{
-			k.SwapDown,
-			k.Up,
-			k.Edit,
-			k.Down,
-		},
-		{
-			k.EditExit,
-		},
+func (m *Model) FullHelp() []key.Binding {
+	if *m.editing {
+		return []key.Binding{
+			m.keymap.EditExit,
+		}
+	}
+	return []key.Binding{
+		m.keymap.Insert,
+		m.keymap.Remove,
+		m.keymap.Check,
+		m.keymap.SwapUp,
+		m.keymap.SwapDown,
+		m.keymap.Up,
+		m.keymap.Edit,
+		m.keymap.Down,
 	}
 }
 
 // ShortHelp implements help.KeyMap.
-func (k *KeyMap) ShortHelp() []key.Binding {
+func (m *Model) ShortHelp() []key.Binding {
+	if *m.editing {
+		return []key.Binding{
+			m.keymap.EditExit,
+		}
+	}
+
 	return []key.Binding{
-		k.Insert,
-		k.Remove,
-		k.Up,
-		k.Edit,
-		k.Down,
+		m.keymap.Insert,
+		m.keymap.Remove,
+		m.keymap.Edit,
 	}
 }

@@ -20,7 +20,7 @@ type (
 		Insert   []string `yaml:"insert" env-default:"enter"`
 		Remove   []string `yaml:"remove" env-default:"backspace"`
 		Edit     []string `yaml:"edit" env-default:"right"`
-		EditExit []string `yaml:"editexit" env-default:"esc"`
+		EditExit []string `yaml:"editexit" env-default:"esc,enter"`
 		Help     []string `yaml:"help" env-default:"?"`
 		Undo     []string `yaml:"undo" env-default:"ctrl+z"`
 		Up       []string `yaml:"up" env-default:"up,j"`
