@@ -90,3 +90,22 @@ func (m *model) ShortHelp() []key.Binding {
 		m.keymap.Help,
 	}
 }
+
+// DevideIntoColumns divides the input slice into multiple columns of the given number of rows each.
+func DevideIntoColumns(bindings []key.Binding, rows int) [][]key.Binding {
+	totalItems := len(bindings)
+
+	columns := (totalItems + rows - 1) / rows // Round up the division
+	result := make([][]key.Binding, columns)
+
+	for i := 0; i < columns; i++ {
+		start := i * rows
+		end := (i + 1) * rows
+		if end > totalItems {
+			end = totalItems
+		}
+		result[i] = bindings[start:end]
+	}
+
+	return result
+}

@@ -85,7 +85,21 @@ func (m *model) View() string {
 
 	h := ""
 	if m.help.ShowAll {
-		h = m.help.FullHelpView([][]key.Binding{m.FullHelp(), cur.FullHelp()})
+		if cur.IsLocked() {
+			h = m.help.FullHelpView(
+				DevideIntoColumns(
+					cur.FullHelp(),
+					len(m.FullHelp()),
+				),
+			)
+		} else {
+			h = m.help.FullHelpView(
+				DevideIntoColumns(
+					append(m.FullHelp(), cur.FullHelp()...),
+					len(m.FullHelp()),
+				),
+			)
+		}
 	} else {
 		if cur.IsLocked() {
 			h = m.help.ShortHelpView(cur.ShortHelp())
