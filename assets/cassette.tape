@@ -1,5 +1,5 @@
 Set Shell zsh
-Set FontSize 20
+Set FontSize 24
 Set WindowBar Colorful
 
 Hide
