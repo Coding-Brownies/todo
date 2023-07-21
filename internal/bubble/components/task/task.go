@@ -3,7 +3,6 @@ package task
 import (
 	"github.com/Coding-Brownies/todo/internal"
 	"github.com/Coding-Brownies/todo/internal/bubble"
-	"github.com/Coding-Brownies/todo/internal/bubble/components"
 	"github.com/Coding-Brownies/todo/internal/entity"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
@@ -49,7 +48,7 @@ func NewModel(k *KeyMap, r internal.Repo) *Model {
 	editing := false
 	l := list.New(
 		[]list.Item{},
-		components.CustomItemRender{
+		CustomItemRender{
 			Editor:  &ti,
 			Editing: &editing,
 		},

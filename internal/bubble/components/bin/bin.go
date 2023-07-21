@@ -3,7 +3,6 @@ package bin
 import (
 	"github.com/Coding-Brownies/todo/internal"
 	"github.com/Coding-Brownies/todo/internal/bubble"
-	"github.com/Coding-Brownies/todo/internal/bubble/components"
 	"github.com/Coding-Brownies/todo/internal/entity"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
@@ -34,7 +33,7 @@ func (m *Model) Error() error {
 func NewModel(k *KeyMap, r internal.Repo) *Model {
 	l := list.New(
 		[]list.Item{},
-		components.CustomItemRender{},
+		CustomItemRender{},
 		20,
 		10,
 	)

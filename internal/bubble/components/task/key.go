@@ -47,5 +47,6 @@ func (m *Model) ShortHelp() []key.Binding {
 		m.keymap.Insert,
 		m.keymap.Remove,
 		m.keymap.Edit,
+		m.keymap.Check,
 	}
 }

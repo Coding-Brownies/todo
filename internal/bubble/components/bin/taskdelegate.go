@@ -1,4 +1,4 @@
-package components
+package bin
 
 import (
 	"fmt"
@@ -13,8 +13,8 @@ import (
 )
 
 var (
-	itemStyle         = lipgloss.NewStyle().PaddingLeft(4)
-	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2)
+	itemStyle         = lipgloss.NewStyle().PaddingLeft(4).Faint(true)
+	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Faint(true)
 )
 
 // this struct is responsible for the rendering of an item inside the list
