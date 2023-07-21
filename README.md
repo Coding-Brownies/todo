@@ -38,7 +38,9 @@ bubble:
 
 ## Change Log
 
-- `02/07/2023`: multiple keybindings can be associated with the same action
-- `04/07/2023`: ctrl+z
-- `14/07/2023`: 🗑 bin
+- `02/07/2023` : multiple keybindings can be associated with the same action
+- `04/07/2023` : ctrl+z
+- `14/07/2023` : 🗑 bin
+- `21/07/2023` : `tui` improvements
+
  
