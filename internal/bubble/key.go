@@ -4,66 +4,18 @@ import (
 	"strings"
 
 	"github.com/Coding-Brownies/todo/config"
-	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"golang.org/x/exp/slices"
 )
 
-var _ help.KeyMap = &KeyMap{}
-
 type KeyMap struct {
-	Check    key.Binding
-	Quit     key.Binding
-	SwapUp   key.Binding
-	SwapDown key.Binding
-	Remove   key.Binding
-	Insert   key.Binding
-	Edit     key.Binding
-	EditExit key.Binding
-	Up       key.Binding
-	Down     key.Binding
-	Help     key.Binding
-	Undo     key.Binding
-	Bin      key.Binding
-	Restore  key.Binding
-	EmptyBin key.Binding
+	Quit  key.Binding
+	Help  key.Binding
+	Undo  key.Binding
+	Cycle key.Binding
 }
 
-// FullHelp implements help.KeyMap.
-func (k *KeyMap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{
-		{
-			k.Quit,
-			k.Insert,
-			k.Remove,
-			k.Check,
-		},
-		{
-			k.SwapUp,
-			k.SwapDown,
-			k.Up,
-			k.Down,
-		},
-		{
-			k.Edit,
-			k.Undo,
-			k.Bin,
-			k.Help,
-		},
-	}
-}
-
-// ShortHelp implements help.KeyMap.
-func (k *KeyMap) ShortHelp() []key.Binding {
-	return []key.Binding{
-		k.Quit,
-		k.Insert,
-		k.Remove,
-		k.Help,
-	}
-}
-
-func replaceSymbols(inputs []string) string {
+func ReplaceSymbols(inputs []string) string {
 	unicodeMap := map[string]string{
 		"ctrl":      "⌃",
 		"space":     "␣",
@@ -93,65 +45,21 @@ func replaceSymbols(inputs []string) string {
 
 func NewKeyMap(cfg *config.Config) *KeyMap {
 	return &KeyMap{
-		Check: key.NewBinding(
-			WithKeys(cfg.Check...),
-			key.WithHelp(replaceSymbols(cfg.Check), "(un)check"),
-		),
 		Quit: key.NewBinding(
 			WithKeys(cfg.Quit...),
-			key.WithHelp(replaceSymbols(cfg.Quit), "quit"),
-		),
-		SwapUp: key.NewBinding(
-			WithKeys(cfg.SwapUp...),
-			key.WithHelp(replaceSymbols(cfg.SwapUp), "swap up"),
-		),
-		SwapDown: key.NewBinding(
-			WithKeys(cfg.SwapDown...),
-			key.WithHelp(replaceSymbols(cfg.SwapDown), "swap down"),
-		),
-		Remove: key.NewBinding(
-			WithKeys(cfg.Remove...),
-			key.WithHelp(replaceSymbols(cfg.Remove), "remove"),
-		),
-		Insert: key.NewBinding(
-			WithKeys(cfg.Insert...),
-			key.WithHelp(replaceSymbols(cfg.Insert), "insert"),
-		),
-		Edit: key.NewBinding(
-			WithKeys(cfg.Edit...),
-			key.WithHelp(replaceSymbols(cfg.Edit), "edit"),
-		),
-		EditExit: key.NewBinding(
-			WithKeys(cfg.EditExit...),
-			key.WithHelp(replaceSymbols(cfg.EditExit), "to exit"),
-		),
-		Up: key.NewBinding(
-			WithKeys(cfg.Up...),
-			key.WithHelp(replaceSymbols(cfg.Up), "go up"),
-		),
-		Down: key.NewBinding(
-			WithKeys(cfg.Down...),
-			key.WithHelp(replaceSymbols(cfg.Down), "go down"),
+			key.WithHelp(ReplaceSymbols(cfg.Quit), "quit"),
 		),
 		Help: key.NewBinding(
 			WithKeys(cfg.Help...),
-			key.WithHelp(replaceSymbols(cfg.Help), "toggle help"),
+			key.WithHelp(ReplaceSymbols(cfg.Help), "toggle help"),
 		),
 		Undo: key.NewBinding(
 			WithKeys(cfg.Undo...),
-			key.WithHelp(replaceSymbols(cfg.Undo), "undo"),
+			key.WithHelp(ReplaceSymbols(cfg.Undo), "undo"),
 		),
-		Bin: key.NewBinding(
-			WithKeys(cfg.Bin...),
-			key.WithHelp(replaceSymbols(cfg.Bin), "toggle bin"),
-		),
-		Restore: key.NewBinding(
-			WithKeys(cfg.Restore...),
-			key.WithHelp(replaceSymbols(cfg.Restore), "restore"),
-		),
-		EmptyBin: key.NewBinding(
-			WithKeys(cfg.EmptyBin...),
-			key.WithHelp(replaceSymbols(cfg.EmptyBin), "empty the bin"),
+		Cycle: key.NewBinding(
+			WithKeys(cfg.Cycle...),
+			key.WithHelp(ReplaceSymbols(cfg.Cycle), "toggle views"),
 		),
 	}
 }
@@ -163,4 +71,41 @@ func WithKeys(keys ...string) key.BindingOpt {
 		}
 		b.SetKeys(keys...)
 	}
+}
+
+// FullHelp implements help.KeyMap.
+func (m *model) FullHelp() []key.Binding {
+	return []key.Binding{
+		m.keymap.Cycle,
+		m.keymap.Help,
+		m.keymap.Quit,
+		m.keymap.Undo,
+	}
+}
+
+// ShortHelp implements help.KeyMap.
+func (m *model) ShortHelp() []key.Binding {
+	return []key.Binding{
+		m.keymap.Quit,
+		m.keymap.Help,
+	}
+}
+
+// DevideIntoColumns divides the input slice into multiple columns of the given number of rows each.
+func DevideIntoColumns(bindings []key.Binding, rows int) [][]key.Binding {
+	totalItems := len(bindings)
+
+	columns := (totalItems + rows - 1) / rows // Round up the division
+	result := make([][]key.Binding, columns)
+
+	for i := 0; i < columns; i++ {
+		start := i * rows
+		end := (i + 1) * rows
+		if end > totalItems {
+			end = totalItems
+		}
+		result[i] = bindings[start:end]
+	}
+
+	return result
 }

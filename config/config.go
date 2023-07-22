@@ -20,12 +20,12 @@ type (
 		Insert   []string `yaml:"insert" env-default:"enter"`
 		Remove   []string `yaml:"remove" env-default:"backspace"`
 		Edit     []string `yaml:"edit" env-default:"right"`
-		EditExit []string `yaml:"editexit" env-default:"esc"`
+		EditExit []string `yaml:"editexit" env-default:"esc,enter"`
 		Help     []string `yaml:"help" env-default:"?"`
 		Undo     []string `yaml:"undo" env-default:"ctrl+z"`
 		Up       []string `yaml:"up" env-default:"up,j"`
 		Down     []string `yaml:"down" env-default:"down,k"`
-		Bin      []string `yaml:"bin" env-default:"ctrl+b"`
+		Cycle    []string `yaml:"cycle" env-default:"ctrl+b"`
 		Restore  []string `yaml:"restore" env-default:"left"`
 		EmptyBin []string `yaml:"emptybin" env-default:"c"`
 	}
